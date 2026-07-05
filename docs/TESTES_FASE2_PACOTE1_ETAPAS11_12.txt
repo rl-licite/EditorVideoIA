@@ -1,0 +1,75 @@
+EditorVideoIA - Fase 2 - Pacote 1 - Etapas 11 e 12
+
+CAMINHO DO PROJETO NO SEU COMPUTADOR:
+C:\Projetos\EditorVideoIA\backend
+
+COMANDOS PARA COLAR NO CMD:
+cd C:\Projetos\EditorVideoIA\backend
+INSTALAR_FASE2_PACOTE1_ETAPAS11_12.cmd
+php artisan serve
+
+HTTP PARA COPIAR E COLAR NO NAVEGADOR:
+http://127.0.0.1:8000/editor-video
+
+O QUE FOI ENTREGUE NESTE PACOTE:
+ETAPA 11 - Editor visual e linha do tempo
+Bloco 1: tela principal da Fase 2.
+Bloco 2: botão Importar mídia.
+Bloco 3: biblioteca de mídias.
+Bloco 4: clique na mídia para entrar na linha do tempo.
+Bloco 5: faixas separadas de vídeo, áudio e imagem.
+Bloco 6: seleção de clipe na linha do tempo.
+Bloco 7: prévia real do clipe selecionado.
+Bloco 8: controles Play, Pause, Stop e barra de tempo.
+
+ETAPA 12 - Inspector e salvamento
+Bloco 1: Inspector do clipe selecionado.
+Bloco 2: alterar nome do clipe.
+Bloco 3: alterar início e duração.
+Bloco 4: alterar posição X e Y.
+Bloco 5: alterar escala e rotação.
+Bloco 6: alterar volume e opacidade.
+Bloco 7: salvamento automático no banco.
+Bloco 8: teste com F5 para confirmar que salvou.
+
+TESTE 1 - ABRIR A PÁGINA
+1. Abra o navegador.
+2. Cole: http://127.0.0.1:8000/editor-video
+3. Resultado esperado: abrir a página EditorVideoIA com Biblioteca, Prévia real, Inspector e Linha do tempo.
+
+TESTE 2 - IMPORTAR VÍDEO
+1. Clique no botão azul Importar mídia.
+2. Escolha um vídeo pequeno do seu computador.
+3. Aguarde aparecer uma mensagem de envio/salvamento.
+4. Resultado esperado: o vídeo aparece na Biblioteca e entra na Linha do tempo.
+
+TESTE 3 - LINHA DO TEMPO
+1. Olhe a parte de baixo da tela, chamada Linha do tempo.
+2. Veja se apareceu um bloco/clipe na faixa Vídeo.
+3. Clique nesse bloco.
+4. Resultado esperado: o clipe fica selecionado com borda amarela e o Inspector mostra os campos dele.
+
+TESTE 4 - PLAY, PAUSE E STOP
+1. Com o clipe selecionado, clique em Play.
+2. Resultado esperado: o vídeo começa a tocar na Prévia real.
+3. Clique em Pause.
+4. Resultado esperado: o vídeo pausa.
+5. Clique em Stop.
+6. Resultado esperado: o vídeo volta para o começo.
+
+TESTE 5 - INSPECTOR
+1. Clique no clipe da linha do tempo.
+2. No Inspector, altere Posição X para 50.
+3. Altere Escala para 80.
+4. Altere Rotação para 10.
+5. Altere Volume para 50.
+6. Resultado esperado: a prévia muda visualmente e aparece mensagem de salvamento.
+
+TESTE 6 - SALVAR E APERTAR F5
+1. Depois das alterações, clique em Salvar projeto.
+2. Aperte F5 no navegador.
+3. Clique novamente no clipe da linha do tempo.
+4. Resultado esperado: os valores alterados continuam no Inspector.
+
+SE DER ERRO:
+Copie a mensagem do navegador ou do CMD e me mande o print.

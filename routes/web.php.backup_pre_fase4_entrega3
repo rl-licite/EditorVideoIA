@@ -1,0 +1,164 @@
+<?php
+
+use App\Http\Controllers\AiController;
+use App\Http\Controllers\BackupController;
+use App\Http\Controllers\CreditController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EditorVideoIA\EditorVideoController as EditorVideoIAController;
+use App\Http\Controllers\EditorVideoIA\HealthController as EditorVideoIAHealthController;
+use App\Http\Controllers\PlanController;
+use App\Http\Controllers\ProductionChecklistController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SystemLogController;
+use App\Http\Controllers\VideoActivityController;
+use App\Http\Controllers\VideoController;
+use App\Http\Controllers\VideoExportController;
+use App\Http\Controllers\VideoFolderController;
+use App\Http\Controllers\VideoProjectController;
+use App\Http\Controllers\VideoTemplateController;
+use App\Http\Controllers\VisualEditorController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', fn () => redirect('/editor-video'));
+
+/*
+|--------------------------------------------------------------------------
+| EditorVideoIA - Rotas principais liberadas para teste local
+|--------------------------------------------------------------------------
+*/
+Route::get('/editor-video', [EditorVideoIAController::class, 'index'])->name('editor-video.index');
+Route::post('/editor-video/media/upload', [EditorVideoIAController::class, 'upload'])->name('editor-video.media.upload');
+Route::get('/editor-video/media/stream/{path}', [EditorVideoIAController::class, 'stream'])->where('path', '.*')->name('editor-video.media.stream');
+Route::delete('/editor-video/media/{mediaAsset}', [EditorVideoIAController::class, 'deleteMedia'])->name('editor-video.media.delete');
+Route::get('/editor-video/project/load', [EditorVideoIAController::class, 'loadProject'])->name('editor-video.project.load');
+Route::post('/editor-video/project/save', [EditorVideoIAController::class, 'saveProject'])->name('editor-video.project.save');
+Route::post('/editor-video/template/save-from-editor', [EditorVideoIAController::class, 'saveTemplateFromEditor'])->name('editor-video.template.save-from-editor');
+Route::post('/editor-video/batch/create', [EditorVideoIAController::class, 'createBatch'])->name('editor-video.batch.create');
+Route::get('/editor-video/batch/status', [EditorVideoIAController::class, 'batchStatus'])->name('editor-video.batch.status');
+Route::post('/editor-video/batch/process', [EditorVideoIAController::class, 'processBatch'])->name('editor-video.batch.process');
+Route::post('/editor-video/batch/reset', [EditorVideoIAController::class, 'resetBatch'])->name('editor-video.batch.reset');
+Route::post('/editor-video/export/prepare', [EditorVideoIAController::class, 'prepareExport'])->name('editor-video.export.prepare');
+Route::post('/editor-video/export/process', [EditorVideoIAController::class, 'processExport'])->name('editor-video.export.process');
+Route::post('/editor-video/export/reset', [EditorVideoIAController::class, 'resetExport'])->name('editor-video.export.reset');
+Route::get('/editor-video/export/status', [EditorVideoIAController::class, 'exportStatus'])->name('editor-video.export.status');
+Route::get('/editor-video/export/download/{index}', [EditorVideoIAController::class, 'downloadExport'])->name('editor-video.export.download');
+Route::get('/editor-video/health', [EditorVideoIAHealthController::class, 'index'])->name('editor-video.health');
+
+/* Templates editaveis - CTA/TCA */
+Route::resource('templates', VideoTemplateController::class)->except(['show']);
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware(['auth'])->group(function () {
+    Route::resource('projetos', VideoProjectController::class)->only(['index', 'store', 'show', 'destroy'])->names('projects');
+
+    Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
+    Route::get('/videos/enviar', [VideoController::class, 'create'])->name('videos.create');
+    Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
+    Route::get('/videos/{video}', [VideoController::class, 'show'])->name('videos.show');
+    Route::patch('/videos/{video}/pasta', [VideoController::class, 'updateFolder'])->name('videos.folder.update');
+    Route::post('/videos/{video}/analisar', [VideoController::class, 'analyze'])->name('videos.analyze');
+    Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
+
+    Route::get('/pastas', [VideoFolderController::class, 'index'])->name('folders.index');
+    Route::post('/pastas', [VideoFolderController::class, 'store'])->name('folders.store');
+    Route::delete('/pastas/{folder}', [VideoFolderController::class, 'destroy'])->name('folders.destroy');
+
+    Route::get('/editor-visual', [VisualEditorController::class, 'index'])->name('visual-editor.index');
+    Route::post('/editor-visual/salvar', [VisualEditorController::class, 'save'])->name('visual-editor.save');
+    Route::post('/editor-visual/template-rapido', [VisualEditorController::class, 'createQuickTemplate'])->name('visual-editor.quick-template');
+
+    Route::get('/exportacoes', [VideoExportController::class, 'index'])->name('exports.index');
+    Route::get('/exportacoes/criar', [VideoExportController::class, 'create'])->name('exports.create');
+    Route::post('/exportacoes', [VideoExportController::class, 'store'])->name('exports.store');
+    Route::get('/exportacoes/{export}', [VideoExportController::class, 'show'])->name('exports.show');
+    Route::get('/exportacoes/{export}/download', [VideoExportController::class, 'download'])->name('exports.download');
+    Route::delete('/exportacoes/{export}', [VideoExportController::class, 'destroy'])->name('exports.destroy');
+
+    Route::get('/ia', [AiController::class, 'index'])->name('ai.index');
+    Route::post('/ia/gerar', [AiController::class, 'generate'])->name('ai.generate');
+    Route::get('/ia/videos/{video}/legendas', [AiController::class, 'subtitles'])->name('ai.subtitles');
+    Route::post('/ia/videos/{video}/legendas', [AiController::class, 'storeSubtitle'])->name('ai.subtitles.store');
+    Route::delete('/ia/legendas/{subtitle}', [AiController::class, 'deleteSubtitle'])->name('ai.subtitles.delete');
+
+    Route::get('/planos', [PlanController::class, 'index'])->name('plans.index');
+    Route::post('/planos/{plan}/assinar', [PlanController::class, 'subscribe'])->name('plans.subscribe');
+    Route::get('/creditos', [CreditController::class, 'index'])->name('credits.index');
+
+    Route::get('/configuracoes', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/configuracoes', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
+    Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+    Route::post('/backups', [BackupController::class, 'store'])->name('backups.store');
+    Route::get('/producao/checklist', [ProductionChecklistController::class, 'index'])->name('production.checklist');
+    Route::get('/atividades', [VideoActivityController::class, 'index'])->name('activities.index');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
+
+// FASE 3 ENTREGA 1 - EDITORVIDEOIA
+Route::get('/editor-video/fase-3/automacoes', [App\Http\Controllers\Fase3AutomacaoController::class, 'index'])
+    ->name('editor-video.fase3.automacoes');
+
+Route::post('/editor-video/fase-3/automacoes/executar', [App\Http\Controllers\Fase3AutomacaoController::class, 'executar'])
+    ->name('editor-video.fase3.automacoes.executar');
+// FASE 3 ENTREGA 2 - EDITORVIDEOIA
+Route::get('/editor-video/fase-3/midia-ia', [App\Http\Controllers\Fase3MidiaIaController::class, 'index'])
+    ->name('editor-video.fase3.midia-ia');
+
+Route::post('/editor-video/fase-3/midia-ia/executar', [App\Http\Controllers\Fase3MidiaIaController::class, 'executar'])
+    ->name('editor-video.fase3.midia-ia.executar');
+
+// FASE 3 ENTREGA 3 - EDITORVIDEOIA
+Route::get('/editor-video/fase-3/producao-ia', [App\Http\Controllers\Fase3ProducaoIaController::class, 'index'])
+    ->name('editor-video.fase3.producao-ia');
+
+Route::post('/editor-video/fase-3/producao-ia/executar', [App\Http\Controllers\Fase3ProducaoIaController::class, 'executar'])
+    ->name('editor-video.fase3.producao-ia.executar');
+
+// FASE 3 ENTREGA 4 - EDITORVIDEOIA
+Route::get('/editor-video/fase-3/publicacao-ia', [App\Http\Controllers\Fase3PublicacaoIaController::class, 'index'])
+    ->name('editor-video.fase3.publicacao-ia');
+
+Route::post('/editor-video/fase-3/publicacao-ia/executar', [App\Http\Controllers\Fase3PublicacaoIaController::class, 'executar'])
+    ->name('editor-video.fase3.publicacao-ia.executar');
+
+// FASE 3 ENTREGA 5 - EDITORVIDEOIA
+Route::get('/editor-video/fase-3/enterprise-ia', [App\Http\Controllers\Fase3EnterpriseIaController::class, 'index'])
+    ->name('editor-video.fase3.enterprise-ia');
+
+Route::post('/editor-video/fase-3/enterprise-ia/executar', [App\Http\Controllers\Fase3EnterpriseIaController::class, 'executar'])
+    ->name('editor-video.fase3.enterprise-ia.executar');
+
+// FASE 3 ENTREGA 5 - EDITORVIDEOIA
+Route::get('/editor-video/fase-3/enterprise-ia', [App\Http\Controllers\Fase3EnterpriseIaController::class, 'index'])
+    ->name('editor-video.fase3.enterprise-ia');
+
+Route::post('/editor-video/fase-3/enterprise-ia/executar', [App\Http\Controllers\Fase3EnterpriseIaController::class, 'executar'])
+    ->name('editor-video.fase3.enterprise-ia.executar');
+// FASE 3 ENTREGA 6 - EDITORVIDEOIA
+Route::get('/editor-video/fase-3/fechamento', [App\Http\Controllers\Fase3FechamentoController::class, 'index'])
+    ->name('editor-video.fase3.fechamento');
+
+Route::post('/editor-video/fase-3/fechamento/executar', [App\Http\Controllers\Fase3FechamentoController::class, 'executar'])
+    ->name('editor-video.fase3.fechamento.executar');
+// FASE 4 ENTREGA 1 - EDITORVIDEOIA
+Route::get('/editor-video/fase-4/producao-profissional', [App\Http\Controllers\Fase4ProducaoProfissionalController::class, 'index'])
+    ->name('editor-video.fase4.producao-profissional');
+
+Route::post('/editor-video/fase-4/producao-profissional/executar', [App\Http\Controllers\Fase4ProducaoProfissionalController::class, 'executar'])
+    ->name('editor-video.fase4.producao-profissional.executar');
+
+
+// FASE 4 ENTREGA 2 - EDITORVIDEOIA
+Route::get('/editor-video/fase-4/motion-templates', [App\Http\Controllers\Fase4MotionTemplatesController::class, 'index'])
+    ->name('editor-video.fase4.motion-templates');
+
+Route::post('/editor-video/fase-4/motion-templates/executar', [App\Http\Controllers\Fase4MotionTemplatesController::class, 'executar'])
+    ->name('editor-video.fase4.motion-templates.executar');
+

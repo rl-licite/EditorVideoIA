@@ -1,0 +1,19 @@
+TESTES - FASE 2 - ETAPA 14 - BLOCOS 1 A 4
+
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Adicionar video, imagem ou audio na timeline.
+3. Clicar no clipe.
+4. Procurar no painel direito: Etapa 14 - Organização profissional.
+5. Clicar em Adicionar marcador.
+Resultado esperado: aparece um marcador na lista e a mensagem confirma.
+6. Alterar o nome do projeto e clicar em Criar versão.
+Resultado esperado: aparece uma versão/snapshot do projeto.
+7. Clicar em Modo revisão.
+Resultado esperado: ativa/desativa revisão sem travar o editor.
+8. Clicar em Congelar clipe.
+Resultado esperado: o clipe fica marcado como congelado/bloqueado na timeline.
+9. Clicar em Aplicar template Reels e depois Aplicar template YouTube.
+Resultado esperado: muda formato do canvas, título/CTA e organização visual.
+10. Clicar em Salvar projeto.
+11. Apertar F5.
+12. Verificar se marcadores, versões, modo revisão, template e clipe congelado continuam salvos.

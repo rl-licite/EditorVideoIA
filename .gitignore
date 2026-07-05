@@ -1,0 +1,15 @@
+/vendor
+/node_modules
+/.env
+/.env.backup
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/bootstrap/cache/*
+/_limpeza_pre_fase5_backup
+/limpeza_payload
+*.zip
+*.rar
+*.7z
+*.log

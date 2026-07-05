@@ -1,0 +1,18 @@
+TESTES - FASE 2 - ETAPA 15 - BLOCOS 5 A 8
+
+1. Abra http://127.0.0.1:8000/editor-video
+2. Confira a área azul em cima da prévia chamada "Atalhos visíveis da Etapa 15".
+3. Clique em Histórico.
+4. Clique em AutoSave.
+5. Clique em Salvar agora.
+6. Clique em Renomear projeto.
+7. Clique em Duplicar projeto.
+8. Clique em Preferências.
+9. Clique em Validar Fase 2.
+10. Clique em Preparar exportação final.
+11. Clique em Gerar relatório final.
+12. Clique em Criar pacote de entrega.
+13. Clique em Aprovar Fase 2.
+14. Clique em Salvar projeto.
+15. Aperte F5.
+16. Confirme que os dados continuam salvos.

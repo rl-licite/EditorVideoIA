@@ -1,0 +1,27 @@
+TESTES - FASE 2 - ETAPA 12 - BLOCOS 5 E 6
+
+1. Abra http://127.0.0.1:8000/editor-video.
+2. Clique em um vídeo da biblioteca.
+3. Clique em Adicionar na timeline.
+4. Clique no clipe na timeline.
+5. SEM clicar dentro do vídeo, clique no botão Play externo.
+Resultado esperado: o vídeo começa a rodar.
+
+6. Clique em Pause.
+Resultado esperado: pausa.
+
+7. Clique em Stop.
+Resultado esperado: volta para o início.
+
+8. Clique em algum lugar vazio da tela, fora do campo de texto.
+9. Aperte Espaço.
+Resultado esperado: Play/Pause funciona.
+
+10. Aperte S.
+Resultado esperado: Stop funciona.
+
+11. Teste -1s e +1s.
+Resultado esperado: contador muda.
+
+12. Clique em Salvar projeto e aperte F5.
+Resultado esperado: timeline continua carregada.

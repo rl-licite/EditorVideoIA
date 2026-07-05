@@ -1,0 +1,45 @@
+FASE 2 - ETAPA 11 - BLOCOS 3 E 4
+
+BLOCO 3: aparar começo/final do clipe e mover no tempo.
+BLOCO 4: confirmar múltiplas trilhas: Video 1, Video 2, Video 3, Imagem, Texto, Audio e Logo.
+
+CMD:
+cd C:\Projetos\EditorVideoIA\backend
+php artisan optimize:clear
+php artisan migrate
+php artisan storage:link
+php artisan serve
+
+HTTP:
+http://127.0.0.1:8000/editor-video
+
+TESTE 1 - abrir editor:
+1. Abra o HTTP acima.
+2. Confirme que aparece EditorVideoIA.
+3. Confirme que aparece Biblioteca, Prévia, Timeline e Inspector.
+
+TESTE 2 - aparar início:
+1. Clique em um vídeo na biblioteca.
+2. Clique em Adicionar na timeline.
+3. Clique no bloco do vídeo na timeline.
+4. Clique no botão Aparar inicio.
+Resultado esperado: o início aumenta um pouco e a duração diminui.
+
+TESTE 3 - aparar final:
+1. Com o mesmo clipe selecionado, clique em Aparar final.
+Resultado esperado: o clipe fica menor.
+
+TESTE 4 - mover no tempo:
+1. Clique em Mover +1s.
+2. Clique em Mover -1s.
+Resultado esperado: o clipe anda para direita e depois volta para esquerda.
+
+TESTE 5 - múltiplas trilhas:
+1. Veja se existem as trilhas Video 1, Video 2, Video 3, Imagem, Texto, Audio e Logo.
+2. Clique no clipe e use os botões de subir/descer trilha no Inspector, se aparecerem.
+Resultado esperado: o clipe muda de linha na timeline.
+
+TESTE 6 - salvar e F5:
+1. Clique em Salvar projeto.
+2. Aperte F5.
+3. Veja se os clipes e trilhas continuam iguais.

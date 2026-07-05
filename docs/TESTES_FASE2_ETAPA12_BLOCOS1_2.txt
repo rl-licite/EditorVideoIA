@@ -1,0 +1,19 @@
+TESTES - FASE 2 - ETAPA 12 - BLOCOS 1 E 2
+
+1) Abra /editor-video.
+2) Selecione um vídeo ou áudio na biblioteca e adicione na timeline.
+3) Clique no clipe.
+4) Clique em Play. O contador deve sair de 00:00 / 00:00 e começar a contar.
+5) Clique em Pause. O contador deve parar no tempo atual.
+6) Clique em Stop. O contador deve voltar para 00:00.
+7) Clique em +1s e -1s. O vídeo deve avançar/voltar um segundo.
+8) Troque a velocidade para 0.5x, 1.5x e 2x. O preview deve tocar mais lento ou mais rápido.
+9) Teste atalhos fora dos campos de texto:
+   - Espaço = Play/Pause
+   - S = Stop
+   - seta direita = +1s
+   - seta esquerda = -1s
+   - Ctrl+S = salvar projeto
+10) Salve, aperte F5 e confirme que o editor continua abrindo normalmente.
+
+OBS: este pacote também mantém as correções anteriores do Bloco 8: volume, mute, fade in, fade out e Pan L/R.

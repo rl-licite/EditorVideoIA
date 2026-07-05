@@ -1,0 +1,21 @@
+TESTES - FASE 2 - ETAPA 14 - BLOCOS 5 A 8
+
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Adicionar um video/imagem/audio na timeline.
+3. Clicar no clipe.
+4. Procurar no painel direito: Etapa 14 - Blocos 5 a 8.
+5. Clicar em Checklist qualidade.
+Resultado esperado: aparece lista com OK/FALTA.
+6. Clicar em Preparar exportacao.
+Resultado esperado: Status exportacao fica PRONTA.
+7. Clicar em Gerar relatorio.
+Resultado esperado: aparece quantidade de clipes e duracao.
+8. Clicar em Limpar vazios.
+Resultado esperado: timeline continua organizada sem apagar clipes validos.
+9. Clicar em Criar backup.
+Resultado esperado: aparece backup com data/hora.
+10. Clicar em Aprovar entrega.
+Resultado esperado: Entrega aprovada fica SIM.
+11. Clicar em Salvar projeto.
+12. Apertar F5.
+13. Confirmar que checklist, exportacao, relatorio, backup e aprovacao continuaram salvos.

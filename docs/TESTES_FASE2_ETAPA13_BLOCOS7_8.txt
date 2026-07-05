@@ -1,0 +1,21 @@
+TESTES - FASE 2 - ETAPA 13 - BLOCOS 7 E 8
+
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Adicionar video ou imagem na timeline.
+3. Clicar no clipe.
+4. No painel direito, procurar: Etapa 13 - Blocos 7 e 8.
+5. Clicar em Chroma Key verde.
+Resultado esperado: botão liga/desliga a opção e mantém o clipe selecionado.
+6. Ajustar Tolerância Chroma.
+Resultado esperado: valor muda e continua no painel.
+7. Clicar em Letterbox cinema.
+Resultado esperado: aparecem barras pretas em cima e embaixo da prévia.
+8. Clicar em Grade dos terços.
+Resultado esperado: aparece a grade para enquadramento sobre a prévia.
+9. Mexer em Temperatura, Matiz/Tint e Granulação.
+Resultado esperado: o visual do clipe muda na prévia.
+10. Clicar em Look final profissional.
+Resultado esperado: aplica contraste, vinheta, nitidez, granulação e letterbox.
+11. Clicar em Salvar projeto.
+12. Apertar F5.
+13. Selecionar o clipe de novo e confirmar se os valores continuaram salvos.

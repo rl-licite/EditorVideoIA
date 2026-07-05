@@ -1,0 +1,42 @@
+EditorVideoIA - Correção Bloco 8 - Fade In, Fade Out e Pan L/R
+
+O que foi corrigido:
+1. Fade In agora altera o áudio real durante o início da reprodução.
+2. Fade Out agora reduz o áudio real no final da mídia.
+3. Pan L/R agora joga o som para esquerda ou direita usando Web Audio API.
+4. Volume, Mutar/Desmutar e Normalizar continuam funcionando.
+
+Teste detalhado:
+
+PARTE A - Testar Fade In
+1. Abra http://127.0.0.1:8000/editor-video.
+2. Selecione um vídeo com som ou envie um MP3.
+3. Adicione na timeline.
+4. Clique no clipe na timeline.
+5. Coloque Volume em 100%.
+6. Coloque Fade In em 5s.
+7. Clique em Stop para voltar ao início.
+8. Clique em Play.
+Resultado esperado: o som começa baixo e aumenta aos poucos nos primeiros 5 segundos.
+
+PARTE B - Testar Fade Out
+1. Com o mesmo clipe selecionado, coloque Fade Out em 5s.
+2. Arraste a barra do próprio player para perto do final do vídeo/áudio.
+3. Clique em Play.
+Resultado esperado: o som vai baixando aos poucos perto do final.
+
+PARTE C - Testar Pan L/R
+1. Use fone de ouvido ou caixa de som estéreo.
+2. Com o clipe tocando, arraste Pan L/R para -100.
+Resultado esperado: o som fica mais forte no lado esquerdo.
+3. Arraste Pan L/R para 100.
+Resultado esperado: o som fica mais forte no lado direito.
+4. Volte Pan L/R para 0.
+Resultado esperado: o som volta centralizado.
+
+PARTE D - Persistência
+1. Ajuste Volume, Fade In, Fade Out e Pan L/R.
+2. Clique em Salvar projeto.
+3. Aperte F5.
+4. Clique no clipe novamente.
+Resultado esperado: os valores aparecem salvos no Inspector.

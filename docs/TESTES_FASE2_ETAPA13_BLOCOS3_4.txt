@@ -1,0 +1,22 @@
+TESTES - FASE 2 - ETAPA 13 - BLOCOS 3 E 4
+
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Adicionar video ou imagem na timeline.
+3. Selecionar o clipe.
+4. No painel direito, procurar: Etapa 13 - Blocos 3 e 4.
+5. Testar Recorte/Zoom interno.
+Resultado esperado: a imagem/video aproxima dentro da area de preview.
+6. Testar Mascara Circular.
+Resultado esperado: o clipe fica arredondado/circular.
+7. Testar Mascara Cinema.
+Resultado esperado: aparecem cortes estilo cinema em cima e embaixo.
+8. Testar Vinheta.
+Resultado esperado: bordas ficam mais escuras.
+9. Testar Nitidez.
+Resultado esperado: o clipe fica mais contrastado/nitido.
+10. Testar Sombra.
+Resultado esperado: o clipe ganha sombra no preview.
+11. Testar presets Retrato, Produto, Cinema e Social.
+12. Clicar em Salvar projeto.
+13. Apertar F5.
+14. Selecionar o clipe novamente e confirmar se os valores continuaram salvos.

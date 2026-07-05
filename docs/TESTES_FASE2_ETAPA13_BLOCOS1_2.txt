@@ -1,0 +1,11 @@
+TESTES - FASE 2 - ETAPA 13 - BLOCOS 1 E 2
+
+1. Abra /editor-video.
+2. Adicione um video ou imagem na timeline.
+3. Clique no clip.
+4. No painel direito, ache Etapa 13 - Efeitos visuais.
+5. Mude Brilho, Contraste, Saturacao, Preto e branco e Sepia.
+6. Veja a pre-visualizacao mudar na hora.
+7. Teste os presets Normal, Cinematico, Cores vivas, Preto e branco e Quente.
+8. Clique Antes/Depois para comparar.
+9. Clique Salvar projeto, aperte F5 e confirme se os efeitos continuam salvos.

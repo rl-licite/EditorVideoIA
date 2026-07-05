@@ -1,0 +1,11 @@
+TESTES - FASE 2 - ETAPA 15 - BLOCOS 1 A 4
+
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Adicionar uma midia na timeline.
+3. Clicar em Historico e confirmar que aparecem acoes no painel.
+4. Clicar em Ativar/Desativar AutoSave e depois Salvar agora.
+5. Renomear projeto, salvar, apertar F5 e confirmar que o nome ficou salvo.
+6. Duplicar projeto e confirmar que uma copia aparece no painel.
+7. Excluir copia e confirmar que ela some.
+8. Alterar tema, qualidade da previa, FPS e volume padrao.
+9. Clicar em Salvar projeto, apertar F5 e confirmar que as preferencias continuaram salvas.

@@ -1,0 +1,19 @@
+EditorVideoIA - Fase 2 - Etapa 11 - Blocos 7 e 8
+
+BLOCO 7 - Imagens e logos
+1. Abrir /editor-video.
+2. Enviar uma imagem PNG/JPG ou selecionar uma imagem da biblioteca.
+3. Clicar em Adicionar na timeline.
+4. Clicar no bloco verde da imagem na timeline.
+5. No painel direito, usar: Arredondar borda, Borda, Alinhar esquerda, Centralizar, Alinhar direita, Reset imagem.
+6. Clicar em Salvar projeto.
+7. Apertar F5 e confirmar se os ajustes continuam.
+
+BLOCO 8 - Audio
+1. Enviar um audio MP3/WAV ou usar um video com som.
+2. Adicionar na timeline.
+3. Clicar no clipe roxo/azul.
+4. No painel direito, alterar Volume, Pan, Fade In e Fade Out.
+5. Clicar em Mutar / Desmutar e Normalizar 100%.
+6. Clicar em Salvar projeto.
+7. Apertar F5 e confirmar se os ajustes continuam.

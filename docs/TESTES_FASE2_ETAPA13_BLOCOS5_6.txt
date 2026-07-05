@@ -1,0 +1,21 @@
+TESTES - FASE 2 - ETAPA 13 - BLOCOS 5 E 6
+
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Adicionar um video ou imagem na timeline.
+3. Clicar no clipe na timeline.
+4. No painel direito, procurar: Etapa 13 - Blocos 5 e 6.
+5. Clicar em Entrada suave.
+Resultado esperado: o clipe muda de posicao, opacidade e enquadramento.
+6. Clicar em Zoom produto.
+Resultado esperado: o clipe aumenta o zoom e ganha sombra/nitidez.
+7. Testar Pan esquerda e Pan direita.
+Resultado esperado: o clipe se desloca para esquerda/direita.
+8. Testar Composicao Social.
+Resultado esperado: o clipe muda para formato mais chamativo, com vinheta leve e mascara arredondada.
+9. Testar Composicao Cinema.
+Resultado esperado: aparece mascara cinema e vinheta mais forte.
+10. Testar Composicao Produto.
+Resultado esperado: brilho, contraste, sombra e nitidez aumentam.
+11. Clicar em Salvar projeto.
+12. Apertar F5.
+13. Selecionar o clipe novamente e confirmar se continuou salvo.

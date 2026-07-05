@@ -1,0 +1,58 @@
+TESTES - Fase 2 - Etapa 11 - Blocos 5 e 6
+
+CAMINHO DO PROJETO
+C:\Projetos\EditorVideoIA\backend
+
+CMD
+cd C:\Projetos\EditorVideoIA\backend
+php artisan optimize:clear
+php artisan migrate
+php artisan storage:link
+php artisan serve
+
+HTTP
+http://127.0.0.1:8000/editor-video
+
+TESTE 1 - Abrir editor
+1. Abra o HTTP acima.
+2. Veja se a tela do EditorVideoIA abriu.
+3. Veja se aparece o aviso da Etapa 11 Blocos 5 e 6.
+
+TESTE 2 - Transicao em um video
+1. Clique em um video da Biblioteca.
+2. Clique em Adicionar na timeline.
+3. Clique no bloco do video na timeline.
+4. No lado direito, procure Transicoes e texto.
+5. Em Transicao do clipe selecionado, escolha Fade.
+6. Clique em Salvar projeto.
+7. Aperte F5.
+8. Clique no clipe novamente.
+Resultado esperado: o Fade continua selecionado e salvo.
+
+TESTE 3 - Preset de transicao
+1. Clique no clipe da timeline.
+2. Clique em Preset Slide.
+3. Veja se aparece na previa a etiqueta Transicao: slide.
+4. Clique em Salvar projeto.
+5. Aperte F5.
+Resultado esperado: o clipe continua com a transicao aplicada.
+
+TESTE 4 - Criar texto
+1. Clique no botao + Texto na barra da timeline.
+2. Veja se aparece um bloco amarelo na trilha Texto.
+3. Clique nesse bloco amarelo.
+4. No painel Transicoes e texto, escreva: OFERTA ESPECIAL.
+5. Em Posicao do texto, escolha Centro.
+6. Mude o tamanho da fonte para 50.
+7. Mude a cor do texto.
+8. Clique em Salvar projeto.
+9. Aperte F5.
+Resultado esperado: o bloco de texto continua na timeline e o texto continua salvo.
+
+TESTE 5 - Texto no rodape
+1. Clique no texto da timeline.
+2. Em Posicao do texto, escolha Rodape.
+3. Veja se ele aparece mais embaixo na previa.
+4. Clique em Salvar projeto.
+5. Aperte F5.
+Resultado esperado: o texto continua no rodape.

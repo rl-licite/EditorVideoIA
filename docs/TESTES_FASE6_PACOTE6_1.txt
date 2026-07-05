@@ -1,0 +1,63 @@
+EditorVideoIA - Fase 6 Pacote 6.1 - Testes de homologacao
+
+1) Extrair o ZIP
+- Extraia o conteudo do ZIP por cima da pasta do projeto EditorVideoIA.
+- Aceite substituir os arquivos quando o Windows perguntar.
+
+2) Rodar atualizacao
+No CMD, entre na pasta raiz do projeto. Exemplo:
+cd C:\Projetos\EditorVideoIA\backend
+ou a pasta exata onde esta o arquivo artisan.
+
+Depois rode:
+INSTALAR_FASE6_PACOTE6_1.bat
+
+3) Iniciar servidor
+Rode separado:
+php artisan serve
+
+4) Abrir no navegador
+http://127.0.0.1:8000/editor-video
+
+5) Teste visual esperado
+- Deve aparecer o cabecalho: EditorVideoIA - Fase 6 - Pacote 6.1 - Motor Profissional.
+- A tela deve ter Biblioteca na esquerda, Preview no centro, Timeline embaixo e Inspector na direita.
+
+6) Teste de upload
+- Clique em Escolher arquivo na Biblioteca.
+- Escolha uma imagem, video ou audio.
+- Clique em Enviar midia.
+- Resultado esperado: a midia aparece na Biblioteca.
+
+7) Teste da timeline
+- Arraste uma midia da Biblioteca para a trilha Video 1, Video 2 ou Audio.
+- Resultado esperado: um clipe colorido aparece na timeline.
+- Clique no clipe.
+- Resultado esperado: o clipe fica com borda amarela e o Inspector mostra os dados.
+
+8) Teste do inspector
+- Altere Nome, Inicio, Duracao, Opacidade, Escala, X, Y ou Rotacao.
+- Clique em Aplicar alteracoes.
+- Resultado esperado: o clipe atualiza e o Preview reflete as alteracoes visuais.
+
+9) Teste de ferramentas
+- Clique em Razor.
+- Clique em um clipe com o playhead no meio do clipe.
+- Resultado esperado: o clipe e dividido em duas partes.
+- Clique em Cursor para voltar a selecao normal.
+
+10) Teste de atalhos
+- Space: Play/Pause.
+- Delete: remove o clipe selecionado.
+- Ctrl+C e Ctrl+V: copia e cola clipe.
+- Ctrl+D: duplica clipe.
+- Ctrl+Z: desfaz.
+- Ctrl+Y: refaz.
+- Shift + Scroll: aumenta/diminui zoom da timeline.
+
+11) Teste de salvamento
+- Depois de criar ou editar clipes, clique em Salvar projeto.
+- Atualize a pagina com F5.
+- Resultado esperado: a timeline volta com os clipes salvos.
+
+Se todos os testes acima passarem, o Pacote 6.1 esta homologado.

@@ -1,0 +1,30 @@
+TESTES - FASE 2 - ETAPA 12 - BLOCOS 7 E 8
+
+TESTE A - Correção do Play
+1. Abrir /editor-video.
+2. Selecionar um vídeo na biblioteca.
+3. Clicar em Adicionar na timeline.
+4. Clicar no clipe da timeline.
+5. Sem clicar dentro do vídeo, clicar no botão Play.
+Resultado esperado: o vídeo deve tocar.
+
+TESTE B - Correção do Espaço
+1. Clique em uma área vazia da página.
+2. Aperte Espaço.
+Resultado esperado: Play/Pause deve alternar uma única vez, sem tocar e pausar na mesma hora.
+
+TESTE C - Diagnóstico Play
+1. Com um vídeo selecionado, clique em Diagnóstico Play.
+Resultado esperado: a mensagem deve mostrar tipo, tempo, duração e readyState.
+
+TESTE D - Botões antigos
+1. Teste Pause.
+2. Teste Stop.
+3. Teste -1s e +1s.
+Resultado esperado: todos continuam funcionando.
+
+TESTE E - Salvamento
+1. Altere algum valor no Inspector.
+2. Clique em Salvar projeto.
+3. Aperte F5.
+Resultado esperado: o projeto deve continuar salvo.

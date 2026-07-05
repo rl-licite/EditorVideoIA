@@ -1,0 +1,29 @@
+EditorVideoIA - Correção Bloco 8 - Volume
+
+O que foi corrigido:
+1. Audio MP3/WAV agora aparece com player real no preview.
+2. O controle Volume agora altera o volume do player imediatamente.
+3. Mutar / Desmutar agora altera o audio real do player.
+4. Normalizar 100% volta o volume para 100%.
+5. Os valores continuam salvando após clicar em Salvar projeto e apertar F5.
+
+Teste detalhado:
+1. Abra http://127.0.0.1:8000/editor-video.
+2. Selecione um vídeo que tenha som ou envie um MP3/WAV.
+3. Clique em Adicionar na timeline.
+4. Clique no clipe na timeline.
+5. Clique em Play.
+6. No painel direito, em Bloco 8 - Audio, reduza o Volume para 0%.
+   Resultado esperado: o som deve sumir.
+7. Aumente para 50%.
+   Resultado esperado: o som volta mais baixo.
+8. Aumente para 100%.
+   Resultado esperado: som normal.
+9. Clique em Mutar / Desmutar.
+   Resultado esperado: alterna entre mudo e som normal.
+10. Clique em Normalizar 100%.
+   Resultado esperado: volume volta para 100%.
+11. Clique em Salvar projeto.
+12. Aperte F5.
+13. Clique no clipe novamente.
+   Resultado esperado: o valor salvo aparece no painel.

@@ -1,0 +1,16 @@
+EditorVideoIA - Checklist limpeza pre-Fase 5
+
+Feito:
+- Backup do routes\web.php criado em _limpeza_pre_fase5_backup
+- routes\web.php revisado aplicado
+- Duplicidade da rota enterprise-ia removida
+- Pacotes antigos de entrega movidos para _limpeza_pre_fase5_backup
+- Readmes, arquivos ROTAS e instaladores antigos movidos para _limpeza_pre_fase5_backup
+- Cache do Laravel limpo
+
+Testes recomendados:
+1. php artisan route:list
+2. php artisan serve
+3. Abrir http://127.0.0.1:8000/editor-video
+4. Abrir http://127.0.0.1:8000/editor-video/fase-4/fase-final
+5. Confirmar sem erro 404 e sem erro 500

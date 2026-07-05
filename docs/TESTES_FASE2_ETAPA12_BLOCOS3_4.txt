@@ -1,0 +1,26 @@
+TESTES - FASE 2 - ETAPA 12 - BLOCOS 3 E 4
+
+1. Abra http://127.0.0.1:8000/editor-video.
+2. Clique em um vídeo da biblioteca.
+3. Clique em Adicionar na timeline.
+4. Clique no clipe na timeline.
+5. Clique no botão Play fora da tela do vídeo.
+Resultado esperado: o vídeo começa a rodar sem precisar clicar dentro do vídeo.
+
+6. Clique em Pause.
+Resultado esperado: o vídeo pausa.
+
+7. Clique em Stop.
+Resultado esperado: o vídeo volta para 00:00.
+
+8. Aperte a tecla Espaço no teclado.
+Resultado esperado: Play/Pause funciona.
+
+9. Clique em algum lugar vazio da tela e aperte Espaço de novo.
+Resultado esperado: Play/Pause continua funcionando.
+
+10. Teste as setas esquerda e direita.
+Resultado esperado: volta/avança 1 segundo.
+
+11. Teste Ctrl+S.
+Resultado esperado: projeto salva.
