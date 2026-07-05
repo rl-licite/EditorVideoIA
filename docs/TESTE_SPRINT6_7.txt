@@ -1,0 +1,19 @@
+EditorVideoIA - Fase 6 - Sprint 6.7
+
+Teste 1 - Auto-scroll
+1. Abra http://127.0.0.1:8000/editor-video
+2. Coloque vários clipes na timeline.
+3. Arraste um clipe para a direita até chegar perto da borda direita da timeline.
+4. Resultado esperado: a timeline começa a rolar sozinha para a direita enquanto você segura o clipe.
+5. Faça o mesmo para a esquerda.
+
+Teste 2 - Zoom com roda do mouse
+1. Segure Ctrl e use a roda do mouse em cima do editor.
+2. Resultado esperado: a timeline aproxima ou afasta.
+3. Segure Shift e use a roda do mouse.
+4. Resultado esperado: também aproxima ou afasta.
+
+Teste 3 - Segurança
+1. Selecione dois clipes com Ctrl + clique.
+2. Arraste um deles.
+3. Resultado esperado: os clipes selecionados continuam andando juntos.

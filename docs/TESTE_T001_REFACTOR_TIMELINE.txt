@@ -1,0 +1,26 @@
+EditorVideoIA - Fase 6 - Módulo 1 Timeline
+T-001 - Refatoração do motor
+
+O que mudou:
+- O arquivo editor-fase6.js está organizado em managers internos:
+  HistoryManager, TimelineManager, InspectorManager, PreviewManager,
+  AssetManager, PlaybackManager, ProjectManager, ShortcutManager e EditorEngine.
+- A interface deve continuar igual.
+- Esta entrega prepara a base para seleção múltipla, movimento em grupo, snap e ripple.
+
+Teste simples:
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Confirmar que o editor abre sem tela branca e sem erro 500.
+3. Importar uma mídia.
+4. Arrastar a mídia para a timeline.
+5. Clicar no clipe.
+6. Alterar Nome ou Duração no Inspector e clicar em Aplicar alterações.
+7. Clicar em Play e Stop.
+8. Clicar em Salvar projeto.
+
+Resultado esperado:
+- O editor abre normalmente.
+- O clipe aparece na timeline.
+- O Inspector funciona.
+- Play/Stop funcionam.
+- Salvar projeto não mostra erro.

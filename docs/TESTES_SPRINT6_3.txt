@@ -1,0 +1,27 @@
+TESTES - SPRINT 6.3 - SELEÇÃO POR CAIXA
+
+1. Abrir editor
+- Acesse http://127.0.0.1:8000/editor-video
+- Resultado esperado: mensagem verde exibindo "Sprint 6.3 ativa".
+
+2. Seleção por caixa
+- Na timeline, clique em uma área vazia de uma trilha e arraste formando um retângulo sobre dois ou mais clipes.
+- Solte o mouse.
+- Resultado esperado: os clipes dentro da caixa ficam selecionados.
+
+3. Seleção somada com Ctrl
+- Selecione um clipe normalmente.
+- Segure Ctrl e arraste uma caixa sobre outros clipes.
+- Resultado esperado: a nova seleção é somada à seleção anterior.
+
+4. Clique simples na timeline
+- Clique sem arrastar em uma área vazia da timeline.
+- Resultado esperado: o playhead muda de posição normalmente, sem abrir seleção por caixa.
+
+5. Mover seleção
+- Com vários clipes selecionados, arraste um deles.
+- Resultado esperado: os clipes selecionados se movem juntos.
+
+6. Salvar projeto
+- Clique em Salvar projeto.
+- Resultado esperado: mensagem de sucesso.

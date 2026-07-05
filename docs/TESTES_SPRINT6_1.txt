@@ -1,0 +1,28 @@
+TESTES - SPRINT 6.1
+
+1. Abra http://127.0.0.1:8000/editor-video
+Resultado esperado: editor abre sem erro 500 e sem tela branca.
+
+2. Clique em Enviar mídia e importe uma imagem ou vídeo.
+Resultado esperado: mídia aparece na biblioteca.
+
+3. Arraste a mídia para uma trilha da timeline.
+Resultado esperado: clipe aparece na trilha.
+
+4. Clique no clipe.
+Resultado esperado: clipe fica selecionado e inspector mostra os dados.
+
+5. Clique em Duplicar.
+Resultado esperado: cria uma cópia do clipe.
+
+6. Clique em Delete.
+Resultado esperado: remove o clipe selecionado.
+
+7. Use Ctrl+Z e Ctrl+Y.
+Resultado esperado: desfaz/refaz a alteração.
+
+8. Clique Play e Stop.
+Resultado esperado: playhead anda e volta para o início no Stop.
+
+9. Clique Salvar projeto.
+Resultado esperado: mensagem de projeto salvo com sucesso.

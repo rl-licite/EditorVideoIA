@@ -1,0 +1,32 @@
+TESTES - SPRINT 6.2
+
+1. Abrir o editor:
+http://127.0.0.1:8000/editor-video
+
+2. Ctrl + clique:
+- Clique em um clipe.
+- Segure Ctrl e clique em outro clipe.
+Resultado esperado: os dois ficam selecionados e o contador do Inspector mostra 2.
+
+3. Shift + clique:
+- Clique em um clipe de uma trilha.
+- Segure Shift e clique em outro clipe da mesma trilha.
+Resultado esperado: os clipes no intervalo ficam selecionados.
+
+4. Mover grupo:
+- Selecione dois ou mais clipes.
+- Arraste um deles.
+Resultado esperado: todos os selecionados se movem juntos.
+
+5. Seleção por caixa:
+- Segure Ctrl.
+- Clique e arraste numa área vazia da timeline passando por cima de clipes.
+Resultado esperado: todos os clipes tocados pela caixa ficam selecionados.
+
+6. ESC:
+- Aperte ESC.
+Resultado esperado: a seleção é limpa.
+
+7. Salvar projeto:
+- Clique em Salvar projeto.
+Resultado esperado: mensagem de sucesso.

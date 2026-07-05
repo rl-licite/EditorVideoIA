@@ -1,0 +1,15 @@
+EditorVideoIA - Fase 6 - Sprint 6.5 corrigida
+
+O que testar:
+1. Abrir http://127.0.0.1:8000/editor-video
+2. Colocar 2 ou 3 clipes na timeline.
+3. Segurar Ctrl e clicar em 2 clipes.
+4. Os 2 clipes devem ficar selecionados.
+5. Arrastar UM dos clipes selecionados.
+6. Os 2 clipes devem andar juntos.
+
+Teste do snap:
+1. Arrastar um clipe perto do início ou fim de outro.
+2. Ele deve encaixar/grudar perto do outro clipe quando o Snap estiver marcado.
+
+Se só 1 clipe mover, a sprint não foi homologada.

@@ -1,0 +1,17 @@
+EditorVideoIA - Fase 6 - Sprint 6.6
+
+O que testar:
+1. Abra http://127.0.0.1:8000/editor-video
+2. Coloque dois clipes na timeline.
+3. Segure CTRL.
+4. Clique em dois clipes para selecionar os dois.
+5. Ainda segurando CTRL, clique em um dos clipes selecionados e arraste para o lado.
+
+Resultado esperado:
+- Os clipes originais ficam no lugar.
+- Uma copia dos clipes aparece e anda junto para a nova posicao.
+- Ao soltar o mouse, as copias ficam selecionadas.
+
+Teste extra:
+- Aperte CTRL+Z.
+- A duplicacao deve ser desfeita.

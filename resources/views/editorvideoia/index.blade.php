@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>EditorVideoIA - Fase 6 Pacote 6.1</title>
+<title>EditorVideoIA - Fase 6.5 Bloco 1</title>
 <link rel="stylesheet" href="{{ asset('editor-video-fase6/editor-fase6.css') }}">
 </head>
 <body>
 <header class="ev-topbar">
     <div>
         <strong>EditorVideoIA</strong>
-        <span class="ev-badge">Fase 6 • Pacote 6.1 • Motor Profissional</span>
+        <span class="ev-badge">Fase 6.5 • Bloco 1 • Base estabilizada</span>
     </div>
     <div class="ev-top-actions">
         <a href="/editor-video/health">Health check</a>
@@ -26,8 +26,8 @@
             <h2>Biblioteca</h2>
             <span id="assetCounter">{{ count($assets ?? []) }}</span>
         </div>
-        <p class="ev-muted">Envie mídia e arraste para uma trilha da timeline.</p>
-        <input id="mediaInput" type="file" accept="video/*,image/*,audio/*">
+        <p class="ev-muted">Envie uma ou várias mídias e arraste para uma trilha da timeline.</p>
+        <input id="mediaInput" type="file" accept="video/*,image/*,audio/*" multiple>
         <button id="btnUpload" class="ev-primary" type="button">Enviar mídia</button>
         <div id="uploadStatus" class="ev-status small">Pronto para importar.</div>
         <input id="assetSearch" type="search" placeholder="Pesquisar mídia...">
@@ -64,7 +64,7 @@
     </aside>
 
     <section class="ev-workspace">
-        <div class="ev-message" id="systemMessage">Pacote 6.1 ativo: timeline multicamada, ferramentas, zoom, snap, razor, ripple, atalhos e salvamento.</div>
+        <div class="ev-message" id="systemMessage">Fase 6.5 Bloco 1 ativo: timeline, upload múltiplo, preview, play/pause e salvamento estabilizados.</div>
         <section class="ev-preview-card">
             <div class="ev-preview-head">
                 <div>
@@ -145,6 +145,7 @@
 <script>
 window.EditorVideoIAFase6 = {
     project: {!! json_encode($project ?? null) !!},
+    activeProjectId: {{ (int) (($project->id ?? 0)) }},
     timeline: {!! json_encode($timeline ?? []) !!},
     assets: {!! json_encode(
         ($assets ?? collect())->map(function ($asset) {

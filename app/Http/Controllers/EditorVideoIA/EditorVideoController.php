@@ -13,17 +13,9 @@ use Illuminate\Support\Str;
 
 class EditorVideoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            [
-                'name' => 'Projeto de teste',
-                'timeline_data' => $this->defaultTimeline(),
-                'duration_seconds' => 0,
-                'settings' => ['fps' => 30, 'resolution' => '1920x1080'],
-            ]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
 
@@ -43,33 +35,53 @@ class EditorVideoController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $request->validate([
-            'media' => ['required', 'file', 'max:512000', 'mimes:mp4,mov,avi,mkv,webm,mp3,wav,aac,flac,jpg,jpeg,png,webp,svg'],
+            'media' => ['required'],
+            'media.*' => ['file', 'max:512000', 'mimes:mp4,mov,avi,mkv,webm,mp3,wav,aac,flac,jpg,jpeg,png,webp,svg'],
         ]);
 
-        $file = $request->file('media');
-        $extension = strtolower($file->getClientOriginalExtension());
-        $storedName = Str::uuid()->toString().'.'.$extension;
-        $path = $file->storeAs('editorvideoia/media', $storedName, 'public');
-        $mime = $file->getMimeType() ?: $this->mimeFromExtension($extension);
-        $mediaType = $this->detectMediaType($mime, $extension);
-        [$width, $height] = $this->detectImageSize($file->getRealPath(), $mediaType);
+        $files = $request->file('media');
+        if (!is_array($files)) {
+            $files = [$files];
+        }
 
-        $asset = MediaAsset::create([
-            'original_name' => $file->getClientOriginalName(),
-            'stored_name' => $storedName,
-            'mime_type' => $mime,
-            'media_type' => $mediaType,
-            'extension' => $extension,
-            'size_bytes' => $file->getSize(),
-            'duration_seconds' => null,
-            'width' => $width,
-            'height' => $height,
-            'storage_path' => $path,
-            'public_url' => route('editor-video.media.stream', $path),
-            'metadata' => ['etapa' => '5.2', 'modulo' => 'download-exportacao'],
+        $assets = [];
+
+        foreach ($files as $file) {
+            if (!$file) {
+                continue;
+            }
+
+            $extension = strtolower($file->getClientOriginalExtension());
+            $storedName = Str::uuid()->toString().'.'.$extension;
+            $path = $file->storeAs('editorvideoia/media', $storedName, 'public');
+            $mime = $file->getMimeType() ?: $this->mimeFromExtension($extension);
+            $mediaType = $this->detectMediaType($mime, $extension);
+            [$width, $height] = $this->detectImageSize($file->getRealPath(), $mediaType);
+
+            $asset = MediaAsset::create([
+                'original_name' => $file->getClientOriginalName(),
+                'stored_name' => $storedName,
+                'mime_type' => $mime,
+                'media_type' => $mediaType,
+                'extension' => $extension,
+                'size_bytes' => $file->getSize(),
+                'duration_seconds' => null,
+                'width' => $width,
+                'height' => $height,
+                'storage_path' => $path,
+                'public_url' => route('editor-video.media.stream', $path),
+                'metadata' => ['fase' => '6.5', 'bloco' => '1', 'modulo' => 'upload-multiplo-estavel'],
+            ]);
+
+            $assets[] = $this->assetPayload($asset);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => count($assets) === 1 ? 'Mídia importada com sucesso.' : count($assets).' mídias importadas com sucesso.',
+            'asset' => $assets[0] ?? null,
+            'assets' => $assets,
         ]);
-
-        return response()->json(['ok' => true, 'asset' => $this->assetPayload($asset)]);
     }
 
     public function stream(string $path)
@@ -98,8 +110,8 @@ class EditorVideoController extends Controller
 
         $timeline = $this->normalizeTimeline($validated['timeline_data']);
 
-        $project = EditorVideoProject::firstOrCreate(['id' => 1]);
-        $project->name = $validated['name'] ?? 'Projeto de teste';
+        $project = $this->resolveProject($request);
+        $project->name = $validated['name'] ?? $project->name ?? 'Projeto EditorVideoIA';
         $project->timeline_data = $timeline;
         $project->duration_seconds = (int) ($validated['duration_seconds'] ?? 0);
         $project->settings = $validated['settings'] ?? ['fps' => 30, 'resolution' => '1920x1080'];
@@ -113,12 +125,9 @@ class EditorVideoController extends Controller
         ]);
     }
 
-    public function loadProject(): JsonResponse
+    public function loadProject(Request $request): JsonResponse
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         return response()->json([
             'ok' => true,
@@ -126,6 +135,36 @@ class EditorVideoController extends Controller
             'timeline' => $this->normalizeTimeline($project->timeline_data),
             'assets' => MediaAsset::latest()->get()->map(fn ($asset) => $this->assetPayload($asset))->values(),
             'templates' => VideoTemplate::latest()->get()->map(fn ($template) => $this->templatePayload($template))->values(),
+        ]);
+    }
+
+
+    /**
+     * Resolve o projeto ativo sem prender o editor no id fixo 1.
+     * Fase 6.5 Bloco 1: permite abrir/salvar por ?project_id=ID e mantém um projeto padrão apenas como fallback.
+     */
+    private function resolveProject(Request $request): EditorVideoProject
+    {
+        $projectId = (int) $request->input('project_id', $request->query('project_id', 0));
+
+        if ($projectId > 0) {
+            $project = EditorVideoProject::find($projectId);
+            if ($project) {
+                return $project;
+            }
+        }
+
+        $project = EditorVideoProject::latest('id')->first();
+
+        if ($project) {
+            return $project;
+        }
+
+        return EditorVideoProject::create([
+            'name' => 'Projeto EditorVideoIA',
+            'timeline_data' => $this->defaultTimeline(),
+            'duration_seconds' => 0,
+            'settings' => ['fps' => 30, 'resolution' => '1920x1080'],
         ]);
     }
 
@@ -202,10 +241,7 @@ class EditorVideoController extends Controller
             'template_snapshot' => ['nullable', 'array'],
         ]);
 
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $snapshot = $validated['template_snapshot'] ?? [];
@@ -254,10 +290,7 @@ class EditorVideoController extends Controller
 
     public function processBatch(Request $request): JsonResponse
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $jobs = $timeline['batch_jobs'] ?? [];
@@ -297,10 +330,7 @@ class EditorVideoController extends Controller
 
     public function resetBatch(): JsonResponse
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $timeline['batch_jobs'] = [];
@@ -317,10 +347,7 @@ class EditorVideoController extends Controller
 
     public function batchStatus(): JsonResponse
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
 
@@ -343,10 +370,7 @@ class EditorVideoController extends Controller
             'bitrate' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $clips = $timeline['clips'] ?? [];
@@ -419,10 +443,7 @@ class EditorVideoController extends Controller
 
     public function processExport(): JsonResponse
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $jobs = $timeline['export_jobs'] ?? [];
@@ -481,10 +502,7 @@ class EditorVideoController extends Controller
 
     public function downloadExport(int $index)
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $jobs = $timeline['export_jobs'] ?? [];
@@ -503,10 +521,7 @@ class EditorVideoController extends Controller
 
     public function resetExport(): JsonResponse
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $timeline['export_jobs'] = [];
@@ -523,10 +538,7 @@ class EditorVideoController extends Controller
 
     public function exportStatus(): JsonResponse
     {
-        $project = EditorVideoProject::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'Projeto de teste', 'timeline_data' => $this->defaultTimeline(), 'duration_seconds' => 0]
-        );
+        $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
 

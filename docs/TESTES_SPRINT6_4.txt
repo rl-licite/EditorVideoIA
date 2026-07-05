@@ -1,0 +1,19 @@
+TESTES - SPRINT 6.4 - MOVIMENTO EM GRUPO
+
+1. Abra http://127.0.0.1:8000/editor-video
+2. Adicione pelo menos 2 clipes na timeline.
+3. Segure Ctrl e clique nos dois clipes para selecionar ambos.
+4. Arraste um dos clipes selecionados para a direita.
+Resultado esperado: os dois clipes se movem juntos, mantendo a distancia relativa.
+
+5. Solte o mouse.
+Resultado esperado: a selecao continua com os dois clipes selecionados.
+
+6. Clique em Ctrl+Z.
+Resultado esperado: os clipes voltam para a posicao anterior.
+
+7. Clique em Ctrl+Y.
+Resultado esperado: o movimento em grupo e refeito.
+
+8. Selecione varios clipes usando a caixa de selecao e arraste um deles.
+Resultado esperado: todos os clipes selecionados se movem juntos.

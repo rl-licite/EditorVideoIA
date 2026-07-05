@@ -4,7 +4,6 @@
     const boot = window.EditorVideoIAFase6 || {};
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const routes = boot.routes || {};
-    const activeProjectId = boot.activeProjectId || boot.project?.id || null;
 
     const baseTracks = [
         { id: 'video_1', name: 'Vídeo 1', type: 'video' },
@@ -25,9 +24,7 @@
         playing: false,
         playTimer: null,
         history: [],
-        future: [],
-        lastSelectedId: null,
-        suppressNextClipClick: false
+        future: []
     };
 
     const els = {
@@ -105,7 +102,7 @@
                 format: 'mp4',
                 bitrate: '12M'
             },
-            meta: { ...(t.meta || {}), version: '6.5-bloco-1-base-estavel' }
+            meta: { ...(t.meta || {}), version: '6.1-motor-profissional-refatorado' }
         };
     }
 
@@ -152,19 +149,8 @@
         if (els.msg) els.msg.textContent = text;
     }
 
-    function withProjectId(url) {
-        if (!activeProjectId || !url) return url;
-        try {
-            const next = new URL(url, window.location.origin);
-            if (!next.searchParams.has('project_id')) next.searchParams.set('project_id', activeProjectId);
-            return next.pathname + next.search + next.hash;
-        } catch (e) {
-            return url + (url.includes('?') ? '&' : '?') + 'project_id=' + encodeURIComponent(activeProjectId);
-        }
-    }
-
     async function api(url, options = {}) {
-        const res = await fetch(withProjectId(url), {
+        const res = await fetch(url, {
             ...options,
             headers: {
                 'X-CSRF-TOKEN': csrf,
@@ -215,85 +201,6 @@
             return els.snapToggle?.checked ? Math.round(value * 2) / 2 : value;
         },
 
-        snapToGrid(value) {
-            return els.snapToggle?.checked ? Math.round(value * 2) / 2 : value;
-        },
-
-        getSnapTargets(excludedIds = []) {
-            const excluded = new Set(excludedIds);
-            const targets = [0, state.currentTime];
-
-            state.timeline.clips.forEach(candidate => {
-                if (excluded.has(candidate.id)) return;
-                targets.push(candidate.start);
-                targets.push(candidate.start + candidate.duration);
-            });
-
-            return Array.from(new Set(
-                targets
-                    .map(value => Number(value))
-                    .filter(value => Number.isFinite(value) && value >= 0)
-                    .map(value => Math.round(value * 1000) / 1000)
-            ));
-        },
-
-        getSmartDelta(items, rawDelta, activeClipId = null) {
-            if (!els.snapToggle?.checked || !items.length) return rawDelta;
-
-            const threshold = Math.max(0.06, 10 / state.pxPerSecond);
-            const targets = this.getSnapTargets(items.map(item => item.id));
-            let best = null;
-
-            const activeItem = items.find(item => item.id === activeClipId) || items[0];
-            const points = [];
-
-            items.forEach(item => {
-                points.push({ item, value: item.start + rawDelta, kind: 'start' });
-                points.push({ item, value: item.start + item.duration + rawDelta, kind: 'end' });
-            });
-
-            if (activeItem) {
-                points.push({ item: activeItem, value: activeItem.start + rawDelta, kind: 'active-start' });
-                points.push({ item: activeItem, value: activeItem.start + activeItem.duration + rawDelta, kind: 'active-end' });
-            }
-
-            points.forEach(point => {
-                targets.forEach(target => {
-                    const diff = target - point.value;
-                    const abs = Math.abs(diff);
-                    if (abs <= threshold && (!best || abs < best.abs)) {
-                        best = { abs, diff, target };
-                    }
-                });
-            });
-
-            if (best) return rawDelta + best.diff;
-            return this.snapToGrid(rawDelta);
-        },
-
-        getSmartStart(rawStart, clip = null) {
-            if (!els.snapToggle?.checked) return rawStart;
-
-            const start = Number(rawStart) || 0;
-            const duration = Number(clip?.duration || 0);
-            const threshold = Math.max(0.06, 10 / state.pxPerSecond);
-            const targets = this.getSnapTargets(clip?.id ? [clip.id] : []);
-            let best = null;
-
-            const points = [start];
-            if (duration > 0) points.push(start + duration);
-
-            points.forEach(point => {
-                targets.forEach(target => {
-                    const diff = target - point;
-                    const abs = Math.abs(diff);
-                    if (abs <= threshold && (!best || abs < best.abs)) best = { abs, diff };
-                });
-            });
-
-            return Math.max(0, best ? start + best.diff : this.snapToGrid(start));
-        },
-
         getClip(id) {
             return state.timeline.clips.find(c => c.id === id);
         },
@@ -304,41 +211,16 @@
 
         selectOnly(id) {
             state.selectedIds = [id];
-            state.lastSelectedId = id;
         },
 
         toggleSelect(id) {
             state.selectedIds = state.selectedIds.includes(id)
                 ? state.selectedIds.filter(current => current !== id)
                 : [...state.selectedIds, id];
-            state.lastSelectedId = id;
-        },
-
-        selectRange(toId) {
-            const fromId = state.lastSelectedId || state.selectedIds[state.selectedIds.length - 1] || toId;
-            const fromClip = this.getClip(fromId);
-            const toClip = this.getClip(toId);
-
-            if (!fromClip || !toClip || fromClip.track !== toClip.track) {
-                this.selectOnly(toId);
-                state.lastSelectedId = toId;
-                return;
-            }
-
-            const start = Math.min(fromClip.start, toClip.start);
-            const end = Math.max(fromClip.start + fromClip.duration, toClip.start + toClip.duration);
-
-            state.selectedIds = state.timeline.clips
-                .filter(clip => clip.track === toClip.track && clip.start < end && (clip.start + clip.duration) > start)
-                .sort((a, b) => a.start - b.start)
-                .map(clip => clip.id);
-
-            state.lastSelectedId = toId;
         },
 
         clearSelection() {
             state.selectedIds = [];
-            state.lastSelectedId = null;
         },
 
         setTool(next) {
@@ -423,91 +305,6 @@
             lane.appendChild(el);
         },
 
-        selectClipsInBox(box, additive = false) {
-            const ids = [];
-
-            document.querySelectorAll('.ev-clip').forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const intersects = !(rect.right < box.left || rect.left > box.right || rect.bottom < box.top || rect.top > box.bottom);
-                if (intersects && el.dataset.id) ids.push(el.dataset.id);
-            });
-
-            const nextIds = additive
-                ? Array.from(new Set([...state.selectedIds, ...ids]))
-                : ids;
-
-            state.selectedIds = nextIds;
-            state.lastSelectedId = nextIds[nextIds.length - 1] || null;
-            EditorEngine.renderAll();
-            setMsg(state.selectedIds.length ? `${state.selectedIds.length} clipe(s) selecionado(s).` : 'Nenhum clipe selecionado.');
-        },
-
-        startBoxSelection(event) {
-            if (!els.tracks) return false;
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            const startX = event.clientX;
-            const startY = event.clientY;
-            const additive = event.ctrlKey || event.metaKey;
-            let moved = false;
-
-            const box = document.createElement('div');
-            box.className = 'ev-selection-box';
-            box.style.position = 'fixed';
-            box.style.left = startX + 'px';
-            box.style.top = startY + 'px';
-            box.style.width = '0px';
-            box.style.height = '0px';
-            box.style.border = '1px solid #60a5fa';
-            box.style.background = 'rgba(37, 99, 235, 0.18)';
-            box.style.boxShadow = '0 0 0 1px rgba(96,165,250,.25), 0 10px 30px rgba(0,0,0,.25)';
-            box.style.zIndex = '9999';
-            box.style.pointerEvents = 'none';
-            box.style.display = 'none';
-            document.body.appendChild(box);
-
-            const move = ev => {
-                const width = Math.abs(ev.clientX - startX);
-                const height = Math.abs(ev.clientY - startY);
-
-                if (width > 4 || height > 4) {
-                    moved = true;
-                    box.style.display = 'block';
-                }
-
-                const left = Math.min(startX, ev.clientX);
-                const top = Math.min(startY, ev.clientY);
-
-                box.style.left = left + 'px';
-                box.style.top = top + 'px';
-                box.style.width = width + 'px';
-                box.style.height = height + 'px';
-            };
-
-            const up = ev => {
-                document.removeEventListener('mousemove', move);
-                document.removeEventListener('mouseup', up);
-
-                const rect = box.getBoundingClientRect();
-                box.remove();
-
-                if (!moved) {
-                    const lane = event.currentTarget;
-                    const time = (event.offsetX || 0) / state.pxPerSecond;
-                    this.setCurrentTime(time);
-                    return;
-                }
-
-                this.selectClipsInBox(rect, additive);
-            };
-
-            document.addEventListener('mousemove', move);
-            document.addEventListener('mouseup', up);
-            return true;
-        },
-
         bindLane(lane) {
             lane.addEventListener('dragover', event => {
                 event.preventDefault();
@@ -526,10 +323,6 @@
                 this.addAssetToLane(JSON.parse(raw), lane, event);
             });
 
-            lane.addEventListener('mousedown', event => {
-                if (event.target === lane) this.startBoxSelection(event);
-            });
-
             lane.addEventListener('click', event => {
                 if (event.target === lane) {
                     const time = event.offsetX / state.pxPerSecond;
@@ -543,7 +336,7 @@
 
             const rect = lane.getBoundingClientRect();
             const rawStart = Math.max(0, (event.clientX - rect.left) / state.pxPerSecond);
-            const start = this.getSmartStart(rawStart);
+            const start = this.snap(rawStart);
             const type = asset.media_type || asset.type || lane.closest('.ev-track')?.querySelector('small')?.textContent || 'video';
 
             const clip = normalizeClip({
@@ -567,22 +360,15 @@
             el.addEventListener('click', event => {
                 event.stopPropagation();
 
-                if (state.suppressNextClipClick) {
-                    state.suppressNextClipClick = false;
-                    return;
-                }
-
                 if (state.tool === 'razor') {
                     this.cutClipAtTime(clip.id, state.currentTime);
                     return;
                 }
 
-                if (event.shiftKey) this.selectRange(clip.id);
-                else if (event.ctrlKey || event.metaKey) this.toggleSelect(clip.id);
+                if (event.ctrlKey || event.metaKey) this.toggleSelect(clip.id);
                 else this.selectOnly(clip.id);
 
                 EditorEngine.renderAll();
-                if (state.selectedIds.length > 1) setMsg(`${state.selectedIds.length} clipe(s) selecionado(s).`);
             });
 
             el.addEventListener('mousedown', event => {
@@ -596,69 +382,26 @@
 
                 event.preventDefault();
                 event.stopPropagation();
+                HistoryManager.push();
 
-                const groupIds = state.selectedIds.includes(clip.id)
-                    ? [...state.selectedIds]
-                    : [clip.id];
-
-                state.selectedIds = groupIds;
-                state.lastSelectedId = clip.id;
+                if (!state.selectedIds.includes(clip.id)) this.selectOnly(clip.id);
 
                 const sx = event.clientX;
-                let moved = false;
-                let historySaved = false;
-
-                const selectedAtStart = state.timeline.clips
-                    .filter(selectedClip => groupIds.includes(selectedClip.id))
-                    .map(selectedClip => ({
-                        id: selectedClip.id,
-                        start: selectedClip.start,
-                        duration: selectedClip.duration,
-                        track: selectedClip.track
-                    }));
                 const original = { start: clip.start, duration: clip.duration };
 
-                const saveHistoryOnce = () => {
-                    if (historySaved) return;
-                    HistoryManager.push();
-                    historySaved = true;
-                };
-
                 const move = ev => {
-                    const rawDeltaPx = ev.clientX - sx;
-                    const delta = rawDeltaPx / state.pxPerSecond;
+                    const delta = (ev.clientX - sx) / state.pxPerSecond;
 
-                    if (Math.abs(rawDeltaPx) > 3) moved = true;
-                    if (!moved) return;
-
-                    saveHistoryOnce();
-
-                    if (side === 'move') {
-                        const minStart = Math.min(...selectedAtStart.map(item => item.start));
-                        const limitedDelta = Math.max(delta, -minStart);
-                        const smartDelta = this.getSmartDelta(selectedAtStart, limitedDelta, clip.id);
-                        const finalDelta = Math.max(smartDelta, -minStart);
-
-                        selectedAtStart.forEach(item => {
-                            const movingClip = this.getClip(item.id);
-                            if (!movingClip) return;
-                            movingClip.start = Math.max(0, item.start + finalDelta);
-                            movingClip.track = item.track;
-                        });
-                    }
+                    if (side === 'move') clip.start = Math.max(0, this.snap(original.start + delta));
 
                     if (side === 'left') {
-                        const ns = Math.max(0, this.getSmartStart(original.start + delta, clip));
+                        const ns = Math.max(0, this.snap(original.start + delta));
                         const end = original.start + original.duration;
                         clip.start = Math.min(ns, end - 0.2);
                         clip.duration = end - clip.start;
                     }
 
-                    if (side === 'right') {
-                        const rawEnd = original.start + original.duration + delta;
-                        const snappedEnd = this.getSmartStart(rawEnd, { id: clip.id, duration: 0 });
-                        clip.duration = Math.max(0.2, snappedEnd - original.start);
-                    }
+                    if (side === 'right') clip.duration = Math.max(0.2, this.snap(original.duration + delta));
 
                     EditorEngine.renderAll();
                 };
@@ -666,12 +409,6 @@
                 const up = () => {
                     document.removeEventListener('mousemove', move);
                     document.removeEventListener('mouseup', up);
-
-                    if (moved) {
-                        state.suppressNextClipClick = true;
-                        const count = state.selectedIds.length;
-                        setMsg(count > 1 ? `${count} clipe(s) movido(s) em grupo.` : 'Clipe movido.');
-                    }
                 };
 
                 document.addEventListener('mousemove', move);
@@ -754,18 +491,9 @@
             if (!els.selectedCounter || !els.inspectorEmpty || !els.inspectorForm) return;
 
             els.selectedCounter.textContent = state.selectedIds.length;
-
-            if (state.selectedIds.length > 1) {
-                els.inspectorEmpty.textContent = `${state.selectedIds.length} clipes selecionados. Arraste um deles para mover o grupo, use Delete para remover todos ou Ctrl+D para duplicar.`;
-                els.inspectorEmpty.classList.remove('hidden');
-                els.inspectorForm.classList.add('hidden');
-                return;
-            }
-
             const clip = TimelineManager.getClip(state.selectedIds[0]);
 
             if (!clip) {
-                els.inspectorEmpty.textContent = 'Selecione um clipe.';
                 els.inspectorEmpty.classList.remove('hidden');
                 els.inspectorForm.classList.add('hidden');
                 return;
@@ -786,14 +514,16 @@
             els.fields.clipRotation.value = clip.settings.rotation;
         },
 
-        readFormIntoClip({ saveHistory = true } = {}) {
+        apply(event) {
+            event.preventDefault();
+
             const clip = TimelineManager.getClip(state.selectedIds[0]);
-            if (!clip) return null;
+            if (!clip) return;
 
-            if (saveHistory) HistoryManager.push();
+            HistoryManager.push();
 
-            clip.name = els.fields.clipName.value || clip.name;
-            clip.start = Math.max(0, Number(els.fields.clipStart.value || 0));
+            clip.name = els.fields.clipName.value;
+            clip.start = Number(els.fields.clipStart.value || 0);
             clip.duration = Math.max(0.2, Number(els.fields.clipDuration.value || 1));
             clip.settings = {
                 ...clip.settings,
@@ -806,48 +536,17 @@
                 rotation: Number(els.fields.clipRotation.value || 0)
             };
 
-            return clip;
-        },
-
-        apply(event) {
-            event.preventDefault();
-
-            const clip = this.readFormIntoClip({ saveHistory: true });
-            if (!clip) return;
-
             EditorEngine.renderAll();
             setMsg('Inspector aplicado no clipe selecionado.');
-        },
-
-        liveApply() {
-            const clip = this.readFormIntoClip({ saveHistory: false });
-            if (!clip) return;
-            TimelineManager.renderRuler();
-            TimelineManager.renderTracks();
-            PreviewManager.update();
         }
     };
 
     const PreviewManager = {
-        activeClipId: null,
-        mediaEl: null,
+        update() {
+            if (!els.preview || !els.previewInfo) return;
 
-        findActiveClip() {
-            const selected = TimelineManager.getClip(state.selectedIds[0]);
-            if (selected) return selected;
-
-            return state.timeline.clips
-                .filter(c => state.currentTime >= c.start && state.currentTime <= c.start + c.duration)
-                .sort((a, b) => {
-                    const ta = state.timeline.tracks.findIndex(t => t.id === a.track);
-                    const tb = state.timeline.tracks.findIndex(t => t.id === b.track);
-                    return tb - ta;
-                })[0] || null;
-        },
-
-        build(clip) {
-            this.activeClipId = clip?.id || null;
-            this.mediaEl = null;
+            const clip = TimelineManager.getClip(state.selectedIds[0])
+                || state.timeline.clips.find(c => state.currentTime >= c.start && state.currentTime <= c.start + c.duration);
 
             if (!clip) {
                 els.preview.innerHTML = '<div class="ev-preview-empty">Arraste uma mídia para a timeline.</div>';
@@ -856,66 +555,17 @@
             }
 
             els.previewInfo.textContent = clip.name;
-            const common = `opacity:${clip.settings.opacity / 100};transform:translate(${clip.settings.x}px,${clip.settings.y}px) scale(${clip.settings.scale / 100}) rotate(${clip.settings.rotation}deg)`;
+            const transform = `translate(${clip.settings.x}px,${clip.settings.y}px) scale(${clip.settings.scale / 100}) rotate(${clip.settings.rotation}deg)`;
 
             if (clip.type === 'video') {
-                els.preview.innerHTML = `<video class="ev-preview-media" src="${clip.url}" playsinline muted style="${common}"></video>`;
-                this.mediaEl = els.preview.querySelector('video');
+                els.preview.innerHTML = `<video src="${clip.url}" controls style="opacity:${clip.settings.opacity / 100};transform:${transform}"></video>`;
             } else if (clip.type === 'image') {
-                els.preview.innerHTML = `<img class="ev-preview-media" src="${clip.url}" style="${common}">`;
-                this.mediaEl = els.preview.querySelector('img');
+                els.preview.innerHTML = `<img src="${clip.url}" style="opacity:${clip.settings.opacity / 100};transform:${transform}">`;
             } else if (clip.type === 'audio') {
-                els.preview.innerHTML = `<audio class="ev-preview-media" src="${clip.url}"></audio><div class="ev-preview-empty">Preview de áudio: ${escapeHtml(clip.name)}</div>`;
-                this.mediaEl = els.preview.querySelector('audio');
+                els.preview.innerHTML = `<audio src="${clip.url}" controls></audio><div class="ev-preview-empty">Preview de áudio</div>`;
             } else {
-                els.preview.innerHTML = `<div class="ev-preview-text" style="font-size:42px;font-weight:900;${common}">${escapeHtml(clip.name)}</div>`;
+                els.preview.innerHTML = `<div style="font-size:42px;font-weight:900;opacity:${clip.settings.opacity / 100};transform:${transform}">${escapeHtml(clip.name)}</div>`;
             }
-        },
-
-        syncMedia(clip) {
-            if (!clip || !this.mediaEl) return;
-
-            const localTime = Math.max(0, state.currentTime - clip.start);
-
-            if (this.mediaEl.tagName === 'VIDEO' || this.mediaEl.tagName === 'AUDIO') {
-                this.mediaEl.volume = Math.min(1, Math.max(0, Number(clip.settings.volume || 100) / 100));
-                this.mediaEl.playbackRate = Math.max(0.25, Number(clip.settings.speed || 1));
-
-                if (Number.isFinite(this.mediaEl.duration) && Math.abs((this.mediaEl.currentTime || 0) - localTime) > 0.28) {
-                    try { this.mediaEl.currentTime = Math.min(localTime, this.mediaEl.duration || localTime); } catch (e) {}
-                }
-
-                if (state.playing) {
-                    const promise = this.mediaEl.play();
-                    if (promise && promise.catch) promise.catch(() => {});
-                } else {
-                    this.mediaEl.pause();
-                }
-            }
-        },
-
-        update() {
-            if (!els.preview || !els.previewInfo) return;
-
-            const clip = this.findActiveClip();
-
-            if (!clip) {
-                if (this.activeClipId !== null) this.build(null);
-                return;
-            }
-
-            if (this.activeClipId !== clip.id) {
-                this.build(clip);
-            } else {
-                const media = els.preview.querySelector('.ev-preview-media, .ev-preview-text');
-                if (media) {
-                    media.style.opacity = clip.settings.opacity / 100;
-                    media.style.transform = `translate(${clip.settings.x}px,${clip.settings.y}px) scale(${clip.settings.scale / 100}) rotate(${clip.settings.rotation}deg)`;
-                }
-                els.previewInfo.textContent = clip.name;
-            }
-
-            this.syncMedia(clip);
         }
     };
 
@@ -938,7 +588,7 @@
         },
 
         addCard(asset) {
-            els.assetList?.querySelector('.ev-empty')?.remove();
+            document.querySelector('.ev-empty')?.remove();
 
             const card = document.createElement('div');
             card.className = 'ev-asset';
@@ -970,35 +620,31 @@
         },
 
         async upload() {
-            const files = Array.from(els.mediaInput?.files || []);
-            if (!files.length) return alert('Escolha um ou mais arquivos primeiro.');
+            const file = els.mediaInput?.files?.[0];
+            if (!file) return alert('Escolha um arquivo primeiro.');
 
             const form = new FormData();
-            files.forEach(file => form.append('media[]', file));
-            els.uploadStatus.textContent = files.length === 1 ? 'Enviando mídia...' : `Enviando ${files.length} mídias...`;
+            form.append('media', file);
+            els.uploadStatus.textContent = 'Enviando...';
 
             try {
                 const result = await api(routes.upload, { method: 'POST', body: form });
-                const uploaded = Array.isArray(result.assets) && result.assets.length ? result.assets : (result.asset ? [result.asset] : []);
+                const a = result.asset;
+                const asset = {
+                    id: a.id,
+                    name: a.original_name,
+                    original_name: a.original_name,
+                    type: a.media_type,
+                    media_type: a.media_type,
+                    url: a.public_url || a.stream_url,
+                    duration: a.duration_seconds || 6,
+                    extension: a.extension
+                };
 
-                uploaded.forEach(a => {
-                    const asset = {
-                        id: a.id,
-                        name: a.original_name || a.name,
-                        original_name: a.original_name || a.name,
-                        type: a.media_type || a.type,
-                        media_type: a.media_type || a.type,
-                        url: a.public_url || a.stream_url || a.url,
-                        duration: a.duration_seconds || a.duration || 6,
-                        extension: a.extension
-                    };
-
-                    state.assets.unshift(asset);
-                    this.addCard(asset);
-                });
-
+                state.assets.unshift(asset);
+                this.addCard(asset);
                 els.mediaInput.value = '';
-                els.uploadStatus.textContent = result.message || `${uploaded.length} mídia(s) importada(s) com sucesso.`;
+                els.uploadStatus.textContent = 'Mídia importada com sucesso.';
             } catch (error) {
                 els.uploadStatus.textContent = error.message || 'Erro ao importar mídia.';
             }
@@ -1008,7 +654,7 @@
     const PlaybackManager = {
         tick() {
             if (!state.playing) return;
-            state.currentTime = Math.round((state.currentTime + 0.1) * 10) / 10;
+            state.currentTime += 0.1;
             if (state.currentTime > TimelineManager.duration()) state.currentTime = 0;
             TimelineManager.updatePlayhead();
             PreviewManager.update();
@@ -1018,13 +664,8 @@
             state.playing = !state.playing;
             if (els.btnPlay) els.btnPlay.textContent = state.playing ? '⏸ Pause' : '▶ Play';
 
-            if (state.playing) {
-                PreviewManager.update();
-                state.playTimer = setInterval(() => this.tick(), 100);
-            } else {
-                clearInterval(state.playTimer);
-                PreviewManager.update();
-            }
+            if (state.playing) state.playTimer = setInterval(() => this.tick(), 100);
+            else clearInterval(state.playTimer);
         },
 
         stop() {
@@ -1044,15 +685,11 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        project_id: activeProjectId,
                         name: boot.project?.name || 'Projeto EditorVideoIA',
                         duration_seconds: Math.ceil(TimelineManager.duration()),
-                        settings: { fase: '6.5', bloco: '1', saved_at: new Date().toISOString() },
+                        settings: { fase: '6.1', saved_at: new Date().toISOString() },
                         timeline_data: state.timeline
                     })
-                }).then(result => {
-                    if (result.project) boot.project = result.project;
-                    return result;
                 });
 
                 setMsg('Projeto salvo com sucesso.');
@@ -1070,13 +707,6 @@
                 if (event.code === 'Space') {
                     event.preventDefault();
                     PlaybackManager.playPause();
-                }
-
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    TimelineManager.clearSelection();
-                    EditorEngine.renderAll();
-                    setMsg('Seleção limpa.');
                 }
 
                 if (event.key === 'Delete') TimelineManager.deleteSelected();
@@ -1132,10 +762,6 @@
             });
 
             els.inspectorForm?.addEventListener('submit', event => InspectorManager.apply(event));
-            Object.values(els.fields).forEach(field => {
-                field?.addEventListener('input', () => InspectorManager.liveApply());
-                field?.addEventListener('change', () => InspectorManager.liveApply());
-            });
             els.save?.addEventListener('click', () => ProjectManager.save());
             els.upload?.addEventListener('click', () => AssetManager.upload());
             els.assetSearch?.addEventListener('input', () => AssetManager.filter());
@@ -1161,7 +787,7 @@
         init() {
             this.bindUi();
             this.renderAll();
-            setMsg('Fase 6.5 Bloco 1 ativa: timeline, preview, play/pause, seleção múltipla e salvamento estabilizados.');
+            setMsg('Sprint 6.1 ativa: motor reorganizado em módulos internos.');
         }
     };
 

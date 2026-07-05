@@ -1,0 +1,24 @@
+T002 - Selecao multipla estabilizada
+
+Teste 1:
+1. Abra /editor-video.
+2. Coloque 2 clipes na timeline.
+3. Segure CTRL.
+4. Clique no primeiro clipe.
+5. Ainda segurando CTRL, clique no segundo clipe.
+Resultado esperado: os 2 clipes ficam selecionados e o Inspector mostra que existem 2 clipes selecionados.
+
+Teste 2:
+1. Com os 2 clipes selecionados, aperte DELETE.
+Resultado esperado: os 2 clipes somem juntos.
+
+Teste 3:
+1. Coloque 2 clipes novamente.
+2. Selecione os 2 com CTRL + clique.
+3. Aperte CTRL + D.
+Resultado esperado: o sistema cria uma copia dos clipes selecionados.
+
+Teste 4:
+1. Selecione 1 clipe.
+2. Veja o Inspector.
+Resultado esperado: o formulario aparece normalmente para editar o clipe unico.

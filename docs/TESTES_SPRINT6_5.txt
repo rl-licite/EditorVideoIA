@@ -1,0 +1,28 @@
+TESTES - Sprint 6.5
+
+1) Movimento em grupo corrigido
+- Abra http://127.0.0.1:8000/editor-video
+- Coloque 3 clipes na timeline.
+- Segure Ctrl e clique em 2 clipes.
+- Arraste um dos clipes selecionados.
+Resultado esperado: os 2 clipes selecionados se movem juntos.
+
+2) Snap no início da timeline
+- Arraste um clipe para perto do começo da timeline.
+Resultado esperado: o clipe encaixa no tempo 0 quando chegar perto.
+
+3) Snap no playhead
+- Clique na régua/timeline para colocar o playhead em uma posição.
+- Arraste um clipe para perto do playhead.
+Resultado esperado: início ou fim do clipe encaixa no playhead.
+
+4) Snap em outros clipes
+- Coloque dois clipes próximos.
+- Arraste um clipe para perto do início ou final do outro.
+Resultado esperado: ele encaixa no começo/fim do outro clipe.
+
+5) Undo/Redo
+- Depois de mover, aperte Ctrl+Z.
+Resultado esperado: os clipes voltam.
+- Aperte Ctrl+Y.
+Resultado esperado: o movimento retorna.
