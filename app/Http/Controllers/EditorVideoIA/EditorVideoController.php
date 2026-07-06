@@ -314,9 +314,28 @@ class EditorVideoController extends Controller
         $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
+        if (($timeline['batch_queue']['paused'] ?? false) === true) {
+
+    return response()->json([
+        'ok' => true,
+        'message' => 'Fila pausada.',
+        'timeline' => $timeline,
+    ]);
+
+}
         $jobs = $timeline['batch_jobs'] ?? [];
 
        $maxParallel = $timeline['batch_queue']['max_parallel'] ?? 4;
+       $availableWorkers = range(1, $maxParallel);
+$busyWorkers = [];
+
+foreach ($jobs as $job) {
+    if (($job['status'] ?? null) === 'processando' && !empty($job['worker'])) {
+        $busyWorkers[] = $job['worker'];
+    }
+}
+
+$availableWorkers = array_values(array_diff($availableWorkers, $busyWorkers));
 $running = 0;
 
 foreach ($jobs as $index => $job) {
@@ -333,10 +352,12 @@ foreach ($jobs as $index => $job) {
         break;
     }
 
-    $running++;
+    $workerId = count($availableWorkers)
+    ? array_shift($availableWorkers)
+    : ++$running;
 
     $jobs[$index]['status'] = 'processando';
-    $jobs[$index]['worker'] = $running;
+    $jobs[$index]['worker'] = $workerId;
     $jobs[$index]['started_at'] = now()->toDateTimeString();
 $jobs[$index]['progress'] = 25;
     $jobs[$index]['progress'] = 5;
@@ -411,7 +432,58 @@ $timeline['batch_queue']['failed'] = collect($jobs)->where('render_status', 'err
             'timeline' => $this->normalizeTimeline($project->fresh()->timeline_data),
         ]);
     }
+public function pauseBatch(Request $request): JsonResponse
+{
+    $project = $this->resolveProject($request);
 
+    $timeline = $this->normalizeTimeline($project->timeline_data);
+    $timeline['batch_queue']['paused'] = true;
+
+    $project->timeline_data = $timeline;
+    $project->save();
+
+    return response()->json([
+        'ok' => true,
+        'paused' => true,
+    ]);
+}
+
+public function resumeBatch(Request $request): JsonResponse
+{
+    $project = $this->resolveProject($request);
+
+    $timeline = $this->normalizeTimeline($project->timeline_data);
+    $timeline['batch_queue']['paused'] = false;
+
+    $project->timeline_data = $timeline;
+    $project->save();
+
+    return response()->json([
+        'ok' => true,
+        'paused' => false,
+    ]);
+}
+
+public function cancelBatch(Request $request): JsonResponse
+{
+    $project = $this->resolveProject($request);
+
+    $timeline = $this->normalizeTimeline($project->timeline_data);
+
+    foreach (($timeline['batch_jobs'] ?? []) as &$job) {
+        if (($job['status'] ?? '') === 'aguardando' || ($job['status'] ?? '') === 'processando') {
+            $job['status'] = 'cancelado';
+        }
+    }
+
+    $project->timeline_data = $timeline;
+    $project->save();
+
+    return response()->json([
+        'ok' => true,
+        'message' => 'Fila cancelada.',
+    ]);
+}
     public function batchStatus(): JsonResponse
     {
         $project = $this->resolveProject($request);
