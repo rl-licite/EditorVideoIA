@@ -137,7 +137,15 @@
             meta: { ...(t.meta || {}), version: '6.5-bloco-1-base-estavel' }
         };
     }
-
+function normalizeKeyframe(k) {
+    return {
+        id: k.id || uid('kf'),
+        time: Math.max(0, Number(k.time || 0)),
+        property: k.property || 'x',
+        value: Number(k.value ?? 0),
+        easing: k.easing || 'linear'
+    };
+}
     function normalizeClip(c) {
         return {
             id: c.id || uid('clip'),
@@ -147,8 +155,9 @@
             type: c.type || c.media_type || 'video',
             url: c.url || c.public_url || c.stream_url || '',
             start: Number(c.start ?? c.start_time ?? 0),
-            duration: Math.max(0.2, Number(c.duration ?? 6)),
-            settings: {
+           duration: Math.max(0.2, Number(c.duration ?? 6)),
+keyframes: Array.isArray(c.keyframes) ? c.keyframes.map(normalizeKeyframe) : [],
+settings: {
                 volume: 100,
                 speed: 1,
                 opacity: 100,
@@ -415,7 +424,8 @@ effectIntensity: 100,
         setCurrentTime(value) {
             state.currentTime = Math.max(0, Number(value) || 0);
             this.updatePlayhead();
-            PreviewManager.update();
+PreviewManager.update();
+KeyframeManager.renderPanel();
         },
 
         updatePlayhead() {
@@ -477,8 +487,9 @@ effectIntensity: 100,
                 <span class="handle right"></span>
             `;
 
-            this.bindClip(el, clip);
-            lane.appendChild(el);
+            KeyframeManager.renderMarkers(el, clip);
+this.bindClip(el, clip);
+lane.appendChild(el);
         },
 
         selectClipsInBox(box, additive = false) {
@@ -806,28 +817,262 @@ effectIntensity: 100,
             setMsg('Clipe cortado com Razor.');
         }
     };
+const KeyframeManager = {
+    properties: [
+        { key: 'x', label: 'Posição X' },
+        { key: 'y', label: 'Posição Y' },
+        { key: 'scale', label: 'Escala' },
+        { key: 'rotation', label: 'Rotação' },
+        { key: 'opacity', label: 'Opacidade' },
+        { key: 'volume', label: 'Volume' },
+        { key: 'brightness', label: 'Brilho' },
+        { key: 'contrast', label: 'Contraste' }
+    ],
 
+    getSelectedClip() {
+        return TimelineManager.getClip(state.selectedIds[0]);
+    },
+
+    localTime(clip) {
+        return Math.max(0, Math.min(Number(clip.duration || 0), state.currentTime - Number(clip.start || 0)));
+    },
+
+    ensurePanel() {
+        if (!els.inspectorForm || document.getElementById('keyframePanel')) return;
+
+        const panel = document.createElement('div');
+        panel.id = 'keyframePanel';
+        panel.className = 'ev-inspector-section';
+        panel.innerHTML = `
+            <h3>Keyframes profissionais</h3>
+            <p class="ev-muted">Crie animações usando o tempo atual do playhead.</p>
+            <div class="ev-grid2">
+                <div>
+                    <label>Propriedade</label>
+                    <select id="keyframeProperty">
+                        ${this.properties.map(p => `<option value="${p.key}">${p.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label>Tempo local</label>
+                    <input id="keyframeTime" type="number" min="0" step="0.1" value="0">
+                </div>
+            </div>
+            <div class="ev-grid2">
+                <button id="btnAddKeyframe" type="button" class="ev-primary">Adicionar Keyframe</button>
+                <button id="btnClearKeyframes" type="button" class="danger">Limpar Keyframes</button>
+            </div>
+            <div id="keyframeList" class="ev-status small">Nenhum keyframe.</div>
+        `;
+
+        els.inspectorForm.appendChild(panel);
+
+        byId('btnAddKeyframe')?.addEventListener('click', () => this.add());
+        byId('btnClearKeyframes')?.addEventListener('click', () => this.clear());
+    },
+
+    currentValue(clip, property) {
+        if (!clip || !clip.settings) return 0;
+        return Number(clip.settings[property] ?? 0);
+    },
+
+    add() {
+        const clip = this.getSelectedClip();
+        if (!clip) return alert('Selecione um clipe primeiro.');
+
+        const property = byId('keyframeProperty')?.value || 'x';
+        const local = this.localTime(clip);
+        const timeField = byId('keyframeTime');
+        const time = Math.max(0, Math.min(Number(clip.duration || 0), Number(timeField?.value || local)));
+        const value = this.currentValue(clip, property);
+
+        HistoryManager.push();
+
+        clip.keyframes = Array.isArray(clip.keyframes) ? clip.keyframes : [];
+
+        const existing = clip.keyframes.find(k =>
+            k.property === property && Math.abs(Number(k.time) - time) < 0.05
+        );
+
+        if (existing) {
+            existing.value = value;
+            existing.time = time;
+        } else {
+            clip.keyframes.push(normalizeKeyframe({
+                id: uid('kf'),
+                time,
+                property,
+                value,
+                easing: 'linear'
+            }));
+        }
+
+        clip.keyframes.sort((a, b) => a.time - b.time);
+        EditorEngine.renderAll();
+        setMsg('Keyframe adicionado em ' + fmt(clip.start + time) + '.');
+    },
+
+    clear() {
+        const clip = this.getSelectedClip();
+        if (!clip) return;
+
+        if (!confirm('Limpar todos os keyframes deste clipe?')) return;
+
+        HistoryManager.push();
+        clip.keyframes = [];
+        EditorEngine.renderAll();
+        setMsg('Keyframes removidos.');
+    },
+
+    remove(id) {
+        const clip = this.getSelectedClip();
+        if (!clip || !Array.isArray(clip.keyframes)) return;
+
+        HistoryManager.push();
+        clip.keyframes = clip.keyframes.filter(k => k.id !== id);
+        EditorEngine.renderAll();
+        setMsg('Keyframe removido.');
+    },
+
+    renderPanel() {
+        this.ensurePanel();
+
+        const clip = this.getSelectedClip();
+        const panel = byId('keyframePanel');
+        const list = byId('keyframeList');
+        const timeField = byId('keyframeTime');
+
+        if (!panel || !list) return;
+
+        if (!clip) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        panel.style.display = 'block';
+
+        const local = this.localTime(clip);
+        if (timeField) timeField.value = local.toFixed(1);
+
+        const keyframes = Array.isArray(clip.keyframes) ? clip.keyframes : [];
+
+        if (!keyframes.length) {
+            list.innerHTML = 'Nenhum keyframe neste clipe.';
+            return;
+        }
+
+        list.innerHTML = keyframes
+            .slice()
+            .sort((a, b) => a.time - b.time)
+            .map(k => {
+                const prop = this.properties.find(p => p.key === k.property)?.label || k.property;
+                return `
+                    <div style="display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #334155;padding:6px 0;">
+                        <span>${fmt(clip.start + Number(k.time || 0))} • ${escapeHtml(prop)} = ${Number(k.value).toFixed(1)}</span>
+                        <button type="button" data-remove-keyframe="${k.id}">remover</button>
+                    </div>
+                `;
+            })
+            .join('');
+
+        list.querySelectorAll('[data-remove-keyframe]').forEach(btn => {
+            btn.addEventListener('click', () => this.remove(btn.dataset.removeKeyframe));
+        });
+    },
+
+    renderMarkers(el, clip) {
+        const keyframes = Array.isArray(clip.keyframes) ? clip.keyframes : [];
+        if (!keyframes.length) return;
+
+        keyframes.forEach(k => {
+            const marker = document.createElement('span');
+            marker.className = 'ev-keyframe-marker';
+            marker.title = `${k.property}: ${k.value}`;
+            marker.style.position = 'absolute';
+            marker.style.top = '3px';
+            marker.style.width = '8px';
+            marker.style.height = '8px';
+            marker.style.borderRadius = '50%';
+            marker.style.background = '#facc15';
+            marker.style.boxShadow = '0 0 0 2px rgba(250,204,21,.25)';
+            marker.style.left = Math.max(0, Math.min(100, (Number(k.time || 0) / Number(clip.duration || 1)) * 100)) + '%';
+            marker.style.transform = 'translateX(-50%)';
+            marker.style.zIndex = '5';
+            el.appendChild(marker);
+        });
+    },
+
+    interpolatedValue(clip, property, localTime, fallback) {
+        const keyframes = (Array.isArray(clip.keyframes) ? clip.keyframes : [])
+            .filter(k => k.property === property)
+            .sort((a, b) => Number(a.time) - Number(b.time));
+
+        if (!keyframes.length) return fallback;
+
+        if (localTime <= Number(keyframes[0].time)) return Number(keyframes[0].value);
+
+        const last = keyframes[keyframes.length - 1];
+        if (localTime >= Number(last.time)) return Number(last.value);
+
+        for (let i = 0; i < keyframes.length - 1; i++) {
+            const a = keyframes[i];
+            const b = keyframes[i + 1];
+
+            if (localTime >= Number(a.time) && localTime <= Number(b.time)) {
+                const span = Math.max(0.0001, Number(b.time) - Number(a.time));
+                const t = (localTime - Number(a.time)) / span;
+                return Number(a.value) + (Number(b.value) - Number(a.value)) * t;
+            }
+        }
+
+        return fallback;
+    },
+
+    applyAtTime(clip) {
+        if (!clip) return clip;
+
+        const keyframes = Array.isArray(clip.keyframes) ? clip.keyframes : [];
+        if (!keyframes.length) return clip;
+
+        const local = this.localTime(clip);
+        const copy = JSON.parse(JSON.stringify(clip));
+        copy.settings = { ...(clip.settings || {}) };
+
+        this.properties.forEach(p => {
+            copy.settings[p.key] = this.interpolatedValue(
+                clip,
+                p.key,
+                local,
+                Number(clip.settings?.[p.key] ?? 0)
+            );
+        });
+
+        return copy;
+    }
+};
     const InspectorManager = {
         update() {
             if (!els.selectedCounter || !els.inspectorEmpty || !els.inspectorForm) return;
 
             els.selectedCounter.textContent = state.selectedIds.length;
 
-            if (state.selectedIds.length > 1) {
-                els.inspectorEmpty.textContent = `${state.selectedIds.length} clipes selecionados. Arraste um deles para mover o grupo, use Delete para remover todos ou Ctrl+D para duplicar.`;
-                els.inspectorEmpty.classList.remove('hidden');
-                els.inspectorForm.classList.add('hidden');
-                return;
-            }
+           if (state.selectedIds.length > 1) {
+    els.inspectorEmpty.textContent = `${state.selectedIds.length} clipes selecionados. Arraste um deles para mover o grupo, use Delete para remover todos ou Ctrl+D para duplicar.`;
+    els.inspectorEmpty.classList.remove('hidden');
+    els.inspectorForm.classList.add('hidden');
+    KeyframeManager.renderPanel();
+    return;
+}
 
             const clip = TimelineManager.getClip(state.selectedIds[0]);
 
-            if (!clip) {
-                els.inspectorEmpty.textContent = 'Selecione um clipe.';
-                els.inspectorEmpty.classList.remove('hidden');
-                els.inspectorForm.classList.add('hidden');
-                return;
-            }
+           if (!clip) {
+    els.inspectorEmpty.textContent = 'Selecione um clipe.';
+    els.inspectorEmpty.classList.remove('hidden');
+    els.inspectorForm.classList.add('hidden');
+    KeyframeManager.renderPanel();
+    return;
+}
 
             els.inspectorEmpty.classList.add('hidden');
             els.inspectorForm.classList.remove('hidden');
@@ -869,6 +1114,7 @@ effectIntensity: 100,
             els.fields.clipFadeIn.value = clip.settings.fadeIn ?? 0;
             els.fields.clipFadeOut.value = clip.settings.fadeOut ?? 0;
             els.fields.clipMute.checked = !!clip.settings.mute;
+            KeyframeManager.renderPanel();
         },
 
         readFormIntoClip({ saveHistory = true } = {}) {
@@ -1007,7 +1253,7 @@ effectIntensity: 100,
         }
     };
 
-    
+
 function inspectorEffectFilter(settings){
 
     const preset = settings.effectPreset || 'none';
@@ -1216,9 +1462,10 @@ function inspectorFilter(clip) {
         update() {
             if (!els.preview || !els.previewInfo) return;
 
-            const clip = this.findActiveClip();
+            const rawClip = this.findActiveClip();
+const clip = KeyframeManager.applyAtTime(rawClip);
 
-            if (!clip) {
+if (!clip) {
                 if (this.activeClipId !== null) this.build(null);
                 return;
             }
@@ -1446,7 +1693,8 @@ function inspectorFilter(clip) {
             TimelineManager.renderRuler();
             TimelineManager.renderTracks();
             InspectorManager.update();
-            PreviewManager.update();
+KeyframeManager.renderPanel();
+PreviewManager.update();
         },
 
         bindUi() {
