@@ -176,10 +176,41 @@
                     <div><label>Nitidez</label><input id="clipSharpen" type="number" min="0" max="100" step="1"></div>
                     <div><label>Desfoque</label><input id="clipBlur" type="number" min="0" max="30" step="1"></div>
                 </div>
-                <div class="ev-grid2">
-                    <div><label>Vinheta</label><input id="clipVignette" type="number" min="0" max="100" step="1"></div>
-                    <div><label>Granulação</label><input id="clipGrain" type="number" min="0" max="100" step="1"></div>
+               <div class="ev-grid2">
+    <div><label>Vinheta</label><input id="clipVignette" type="number" min="0" max="100" step="1"></div>
+    <div><label>Granulação</label><input id="clipGrain" type="number" min="0" max="100" step="1"></div>
+</div>
+<div class="ev-grid2">
+    <div>
+        <label>Preset de efeito</label>
+        <select id="clipEffectPreset">
+            <option value="none">Nenhum</option>
+            <option value="bw">Preto e branco</option>
+            <option value="sepia">Sépia</option>
+            <option value="vintage">Vintage</option>
+            <option value="cinema">Cinema</option>
+            <option value="hdr">HDR</option>
+            <option value="vhs">VHS</option>
+            <option value="cold">Frio</option>
+            <option value="warm">Quente</option>
+        </select>
+    </div>
+
+    <div>
+        <label>Intensidade</label>
+        <input id="clipEffectIntensity"
+               type="number"
+               min="0"
+               max="100"
+               step="1"
+               value="100">
+    </div>
+</div>
+
+</div>
+
                 </div>
+
             </div>
 
             <div class="ev-inspector-section">
