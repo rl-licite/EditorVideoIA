@@ -472,6 +472,7 @@ effectIntensity: 100,
             el.style.left = (clip.start * state.pxPerSecond) + 'px';
             el.style.width = Math.max(44, clip.duration * state.pxPerSecond) + 'px';
             el.innerHTML = `
+                            ${KeyframeManager.markersHtml(clip)}
                 <span class="handle left"></span>
                 <span>${escapeHtml(clip.name)}</span>
                 <span class="handle right"></span>
@@ -806,7 +807,90 @@ effectIntensity: 100,
             setMsg('Clipe cortado com Razor.');
         }
     };
+    const KeyframeManager = {
+        ensure(clip) {
+            if (!clip) return [];
+            if (!Array.isArray(clip.keyframes)) clip.keyframes = [];
+            clip.keyframes = clip.keyframes
+                .filter(k => k && typeof k === 'object')
+                .map(k => ({
+                    time: Math.max(0, Number(k.time || 0)),
+                    settings: k.settings && typeof k.settings === 'object' ? k.settings : {}
+                }))
+                .sort((a, b) => a.time - b.time);
+            return clip.keyframes;
+        },
 
+        add() {
+            const clip = TimelineManager.getClip(state.selectedIds[0]);
+            if (!clip) {
+                setMsg('Selecione um clipe para criar keyframe.');
+                return;
+            }
+
+            HistoryManager.push();
+
+            const localTime = Math.max(0, Number(state.currentTime || 0) - Number(clip.start || 0));
+            const time = Number(localTime.toFixed(2));
+            const keyframes = this.ensure(clip);
+
+            const frame = {
+                time,
+                settings: JSON.parse(JSON.stringify(clip.settings || {}))
+            };
+
+            const existingIndex = keyframes.findIndex(k => Math.abs(Number(k.time) - time) < 0.08);
+
+            if (existingIndex >= 0) {
+                keyframes[existingIndex] = frame;
+                setMsg('Keyframe atualizado.');
+            } else {
+                keyframes.push(frame);
+                setMsg('Keyframe criado.');
+            }
+
+            clip.keyframes = keyframes.sort((a, b) => a.time - b.time);
+            EditorEngine.renderAll();
+        },
+
+        removeNearest() {
+            const clip = TimelineManager.getClip(state.selectedIds[0]);
+            if (!clip) return;
+
+            const keyframes = this.ensure(clip);
+            if (!keyframes.length) return;
+
+            HistoryManager.push();
+
+            const localTime = Math.max(0, Number(state.currentTime || 0) - Number(clip.start || 0));
+            let bestIndex = 0;
+            let bestDistance = Infinity;
+
+            keyframes.forEach((k, index) => {
+                const distance = Math.abs(Number(k.time || 0) - localTime);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestIndex = index;
+                }
+            });
+
+            keyframes.splice(bestIndex, 1);
+            clip.keyframes = keyframes;
+            EditorEngine.renderAll();
+            setMsg('Keyframe removido.');
+        },
+
+        markersHtml(clip) {
+            const keyframes = this.ensure(clip);
+            if (!keyframes.length) return '';
+            const duration = Math.max(0.2, Number(clip.duration || 1));
+
+            return keyframes.map(k => {
+                const left = Math.max(0, Math.min(100, (Number(k.time || 0) / duration) * 100));
+                return '<span class="ev-keyframe-marker" style="left:' + left + '%" title="Keyframe"></span>';
+            }).join('');
+        }
+    };
     const InspectorManager = {
         update() {
             if (!els.selectedCounter || !els.inspectorEmpty || !els.inspectorForm) return;
@@ -1430,6 +1514,15 @@ const common =
                 }
 
                 if (event.key === 'Delete') TimelineManager.deleteSelected();
+                                if (event.key.toLowerCase() === 'k' && !event.shiftKey) {
+                    event.preventDefault();
+                    KeyframeManager.add();
+                }
+
+                if (event.key.toLowerCase() === 'k' && event.shiftKey) {
+                    event.preventDefault();
+                    KeyframeManager.removeNearest();
+                }
 
                 if (event.ctrlKey && event.key.toLowerCase() === 'z') {
                     event.preventDefault();

@@ -14,3 +14,20 @@
 .ev-secondary { width:100%; margin-top:8px; padding:9px 10px; border-radius:8px; border:1px solid #334155; background:#111827; color:#e5e7eb; font-weight:700; cursor:pointer; }
 .ev-secondary:hover { background:#1f2937; }
 .ev-preview-media, .ev-preview-text { will-change: transform, filter, opacity; }
+.ev-clip {
+    position: absolute;
+    overflow: hidden;
+}
+
+.ev-keyframe-marker {
+    position: absolute;
+    top: 4px;
+    width: 9px;
+    height: 9px;
+    background: #facc15;
+    border: 1px solid #000;
+    transform: translateX(-50%) rotate(45deg);
+    z-index: 20;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, .35);
+    pointer-events: none;
+}
