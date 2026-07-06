@@ -309,17 +309,36 @@ class EditorVideoController extends Controller
         $timeline = $this->normalizeTimeline($project->timeline_data);
         $jobs = $timeline['batch_jobs'] ?? [];
 
-        foreach ($jobs as $index => $job) {
-            if (!is_array($job)) {
-                continue;
-            }
+       $maxParallel = $timeline['batch_queue']['max_parallel'] ?? 4;
+$running = 0;
 
-            $jobs[$index]['status'] = 'concluido';
-            $jobs[$index]['progress'] = 100;
-            $jobs[$index]['processed_at'] = now()->toDateTimeString();
-            $jobs[$index]['output_name'] = 'preview_lote_'.($index + 1).'_'.Str::slug($job['name'] ?? 'midia').'.mp4';
-            $jobs[$index]['message'] = 'Processado na fila local de automacao em massa.';
-        }
+foreach ($jobs as $index => $job) {
+
+    if (!is_array($job)) {
+        continue;
+    }
+
+    if (($job['status'] ?? '') !== 'aguardando') {
+        continue;
+    }
+
+    if ($running >= $maxParallel) {
+        break;
+    }
+
+    $running++;
+
+    $jobs[$index]['status'] = 'processando';
+    $jobs[$index]['worker'] = $running;
+    $jobs[$index]['started_at'] = now()->toDateTimeString();
+
+    $jobs[$index]['progress'] = 100;
+    $jobs[$index]['status'] = 'concluido';
+    $jobs[$index]['processed_at'] = now()->toDateTimeString();
+    $jobs[$index]['finished_at'] = now()->toDateTimeString();
+    $jobs[$index]['output_name'] = 'preview_lote_'.($index + 1).'_'.Str::slug($job['name'] ?? 'midia').'.mp4';
+    $jobs[$index]['message'] = 'Processado pelo Worker '.$running.'.';
+}
 
         $timeline['batch_jobs'] = array_values($jobs);
         $timeline['meta']['version'] = '4.2-processamento-em-massa-blocos-3-4';
