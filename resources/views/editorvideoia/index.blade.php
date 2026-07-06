@@ -81,7 +81,34 @@
                 <div class="ev-preview-empty">Arraste uma mídia para a timeline.</div>
             </div>
         </section>
+        <section class="ev-batch-card">
+            <div class="ev-batch-head">
+                <div>
+                    <strong>Processamento em lote</strong>
+                    <span id="batchSummary">0 vídeos na fila</span>
+                </div>
+                <div class="ev-batch-actions">
+                    <button id="btnBatchCreate" type="button">Criar fila</button>
+                    <button id="btnBatchStart" type="button">Iniciar</button>
+                    <button id="btnBatchPause" type="button">Pausar</button>
+                    <button id="btnBatchResume" type="button">Continuar</button>
+                    <button id="btnBatchCancel" class="danger" type="button">Cancelar</button>
+                </div>
+            </div>
 
+            <div class="ev-batch-progress">
+                <div id="batchProgressBar"></div>
+            </div>
+
+            <div class="ev-batch-stats">
+                <span>Aguardando: <b id="batchWaiting">0</b></span>
+                <span>Processando: <b id="batchProcessing">0</b></span>
+                <span>Concluídos: <b id="batchFinished">0</b></span>
+                <span>Erros: <b id="batchFailed">0</b></span>
+            </div>
+
+            <div id="batchList" class="ev-batch-list"></div>
+        </section>
         <section class="ev-timeline-card">
             <div class="ev-tools">
                 <button class="tool active" data-tool="select" type="button">Cursor</button>
@@ -260,7 +287,13 @@ window.EditorVideoIAFase6 = {
     routes: {
         upload: "{{ route('editor-video.media.upload') }}",
         save: "{{ route('editor-video.project.save') }}",
-        load: "{{ route('editor-video.project.load') }}"
+                load: "{{ route('editor-video.project.load') }}",
+        batchCreate: "{{ route('editor-video.batch.create') }}",
+        batchProcess: "{{ route('editor-video.batch.process') }}",
+        batchStatus: "{{ route('editor-video.batch.status') }}",
+        batchPause: "{{ route('editor-video.batch.pause') }}",
+        batchResume: "{{ route('editor-video.batch.resume') }}",
+        batchCancel: "{{ route('editor-video.batch.cancel') }}"
     }
 };
 </script>

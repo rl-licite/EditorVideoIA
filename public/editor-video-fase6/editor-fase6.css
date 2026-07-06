@@ -31,3 +31,76 @@
     box-shadow: 0 0 0 2px rgba(250, 204, 21, .35);
     pointer-events: none;
 }
+.ev-batch-card {
+    background: #111827;
+    border: 1px solid #243044;
+    border-radius: 14px;
+    padding: 14px;
+    margin: 14px 0;
+}
+
+.ev-batch-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.ev-batch-head strong {
+    display: block;
+    color: #fff;
+}
+
+.ev-batch-head span {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.ev-batch-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ev-batch-progress {
+    height: 10px;
+    background: #020617;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 12px 0;
+}
+
+#batchProgressBar {
+    height: 100%;
+    width: 0%;
+    background: #22c55e;
+    transition: width .25s ease;
+}
+
+.ev-batch-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    font-size: 12px;
+    color: #d1d5db;
+}
+
+.ev-batch-list {
+    margin-top: 10px;
+    max-height: 160px;
+    overflow: auto;
+    display: grid;
+    gap: 6px;
+}
+
+.ev-batch-job {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    background: #020617;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #e5e7eb;
+}
