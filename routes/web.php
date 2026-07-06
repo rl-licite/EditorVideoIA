@@ -38,6 +38,9 @@ Route::post('/editor-video/batch/create', [EditorVideoIAController::class, 'crea
 Route::get('/editor-video/batch/status', [EditorVideoIAController::class, 'batchStatus'])->name('editor-video.batch.status');
 Route::post('/editor-video/batch/process', [EditorVideoIAController::class, 'processBatch'])->name('editor-video.batch.process');
 Route::post('/editor-video/batch/reset', [EditorVideoIAController::class, 'resetBatch'])->name('editor-video.batch.reset');
+Route::post('/editor-video/batch/pause', [EditorVideoIAController::class, 'pauseBatch'])->name('editor-video.batch.pause');
+Route::post('/editor-video/batch/resume', [EditorVideoIAController::class, 'resumeBatch'])->name('editor-video.batch.resume');
+Route::post('/editor-video/batch/cancel', [EditorVideoIAController::class, 'cancelBatch'])->name('editor-video.batch.cancel');
 Route::post('/editor-video/export/prepare', [EditorVideoIAController::class, 'prepareExport'])->name('editor-video.export.prepare');
 Route::post('/editor-video/export/process', [EditorVideoIAController::class, 'processExport'])->name('editor-video.export.process');
 Route::post('/editor-video/export/reset', [EditorVideoIAController::class, 'resetExport'])->name('editor-video.export.reset');
