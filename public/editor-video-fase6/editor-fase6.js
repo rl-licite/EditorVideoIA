@@ -1055,6 +1055,34 @@
     const PreviewManager = {
         activeClipId: null,
         mediaEl: null,
+        audioCtx: null,
+        audioNodes: new WeakMap(),
+
+        ensureAudioGraph(mediaEl) {
+            if (!mediaEl || (mediaEl.tagName !== 'VIDEO' && mediaEl.tagName !== 'AUDIO')) return null;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx || !window.StereoPannerNode) return null;
+
+            if (!this.audioCtx) this.audioCtx = new AudioCtx();
+
+            if (this.audioNodes.has(mediaEl)) return this.audioNodes.get(mediaEl);
+
+            try {
+                const source = this.audioCtx.createMediaElementSource(mediaEl);
+                const pan = this.audioCtx.createStereoPanner();
+                const gain = this.audioCtx.createGain();
+
+                source.connect(pan);
+                pan.connect(gain);
+                gain.connect(this.audioCtx.destination);
+
+                const graph = { source, pan, gain };
+                this.audioNodes.set(mediaEl, graph);
+                return graph;
+            } catch (e) {
+                return null;
+            }
+        },
 
         findActiveClip() {
             const selected = TimelineManager.getClip(state.selectedIds[0]);
@@ -1083,7 +1111,7 @@
             const common = `opacity:${clip.settings.opacity / 100};transform:${inspectorTransform(clip)};transform-origin:${inspectorTransformOrigin(clip)};object-fit:${inspectorObjectFit(clip)};border-radius:${Number(clip.settings.radius || 0)}px;filter:${inspectorFilter(clip)}`;
 
             if (clip.type === 'video') {
-                els.preview.innerHTML = `<video class="ev-preview-media" src="${clip.url}" playsinline muted style="${common}"></video>`;
+                els.preview.innerHTML = `<video class="ev-preview-media" src="${clip.url}" playsinline style="${common}"></video>`;
                 this.mediaEl = els.preview.querySelector('video');
             } else if (clip.type === 'image') {
                 els.preview.innerHTML = `<img class="ev-preview-media" src="${clip.url}" style="${common}">`;
@@ -1104,8 +1132,33 @@
             const localTime = Math.max(0, state.currentTime - clip.start);
 
             if (this.mediaEl.tagName === 'VIDEO' || this.mediaEl.tagName === 'AUDIO') {
-                this.mediaEl.volume = clip.settings.mute ? 0 : Math.min(1, Math.max(0, (Number(clip.settings.volume || 100) * Number(clip.settings.gain || 100) / 10000)));
+                const volume = Number(clip.settings.volume || 100);
+                const gain = Number(clip.settings.gain || 100);
+                const fadeIn = Math.max(0, Number(clip.settings.fadeIn || 0));
+                const fadeOut = Math.max(0, Number(clip.settings.fadeOut || 0));
+                const balance = Math.max(-100, Math.min(100, Number(clip.settings.balance || 0)));
+
+                let fadeFactor = 1;
+                if (fadeIn > 0 && localTime < fadeIn) fadeFactor = Math.min(fadeFactor, localTime / fadeIn);
+
+                const clipDuration = Number(clip.duration || 0);
+                const remaining = clipDuration - localTime;
+                if (fadeOut > 0 && remaining < fadeOut) fadeFactor = Math.min(fadeFactor, Math.max(0, remaining / fadeOut));
+
+                const finalVolume = clip.settings.mute ? 0 : Math.min(1, Math.max(0, (volume * gain * fadeFactor) / 10000));
+
+                this.mediaEl.muted = false;
+                this.mediaEl.volume = finalVolume;
                 this.mediaEl.playbackRate = Math.max(0.25, Number(clip.settings.speed || 1));
+
+                const graph = this.ensureAudioGraph(this.mediaEl);
+                if (graph) {
+                    graph.pan.pan.value = balance / 100;
+                    graph.gain.gain.value = 1;
+                    if (state.playing && this.audioCtx && this.audioCtx.state === 'suspended') {
+                        this.audioCtx.resume().catch(() => {});
+                    }
+                }
 
                 if (Number.isFinite(this.mediaEl.duration) && Math.abs((this.mediaEl.currentTime || 0) - localTime) > 0.28) {
                     try { this.mediaEl.currentTime = Math.min(localTime, this.mediaEl.duration || localTime); } catch (e) {}
