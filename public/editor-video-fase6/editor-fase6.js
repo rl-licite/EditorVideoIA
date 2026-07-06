@@ -869,6 +869,11 @@ effectIntensity: 100,
             els.fields.clipFadeIn.value = clip.settings.fadeIn ?? 0;
             els.fields.clipFadeOut.value = clip.settings.fadeOut ?? 0;
             els.fields.clipMute.checked = !!clip.settings.mute;
+            if (els.fields.clipEffectPreset)
+    els.fields.clipEffectPreset.value = clip.settings.effectPreset || 'none';
+
+if (els.fields.clipEffectIntensity)
+    els.fields.clipEffectIntensity.value = clip.settings.effectIntensity ?? 100;
         },
 
         readFormIntoClip({ saveHistory = true } = {}) {
@@ -899,6 +904,8 @@ effectIntensity: 100,
                 blur: Number(els.fields.clipBlur.value || 0),
                 vignette: Number(els.fields.clipVignette.value || 0),
                 grain: Number(els.fields.clipGrain.value || 0),
+                effectPreset: els.fields.clipEffectPreset?.value || 'none',
+effectIntensity: Number(els.fields.clipEffectIntensity?.value || 100),
                 scaleX: Number(els.fields.clipScaleX.value || 100),
                 scaleY: Number(els.fields.clipScaleY.value || 100),
                 anchorX: Number(els.fields.clipAnchorX.value || 50),
@@ -1007,7 +1014,7 @@ effectIntensity: 100,
         }
     };
 
-    
+
 function inspectorEffectFilter(settings){
 
     const preset = settings.effectPreset || 'none';
@@ -1045,19 +1052,22 @@ function inspectorEffectFilter(settings){
 }
 
 function inspectorFilter(clip) {
+    const s = clip.settings || {};
+    const exposure = 100 + Number(s.exposure || 0);
+    const temperature = Number(s.temperature || 0);
+    const sepia = Math.max(0, temperature) / 220;
+    const cool = Math.max(0, -temperature) / 240;
+    const blur = Number(s.blur || 0);
+    const hue = Number(s.hue || 0);
+    const contrast = Number(s.contrast ?? 100);
+    const brightness = Math.max(0, Number(s.brightness ?? 100) * exposure / 100);
+    const saturation = Number(s.saturation ?? 100);
 
-        const s = clip.settings || {};
-        const exposure = 100 + Number(s.exposure || 0);
-        const temperature = Number(s.temperature || 0);
-        const sepia = Math.max(0, temperature) / 220;
-        const cool = Math.max(0, -temperature) / 240;
-        const blur = Number(s.blur || 0);
-        const hue = Number(s.hue || 0);
-        const contrast = Number(s.contrast ?? 100);
-        const brightness = Math.max(0, Number(s.brightness ?? 100) * exposure / 100);
-        const saturation = Number(s.saturation ?? 100);
-        return `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) sepia(${sepia}) opacity(${1 - cool * 0.06}) blur(${blur}px)`;
-    }
+    const baseFilter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) sepia(${sepia}) opacity(${1 - cool * 0.06}) blur(${blur}px)`;
+    const effectFilter = inspectorEffectFilter(s);
+
+    return [baseFilter, effectFilter].filter(Boolean).join(' ');
+}
 
     function inspectorTransform(clip) {
         const s = clip.settings || {};
@@ -1148,7 +1158,18 @@ function inspectorFilter(clip) {
             }
 
             els.previewInfo.textContent = clip.name;
-            const common = `opacity:${clip.settings.opacity / 100};transform:${inspectorTransform(clip)};transform-origin:${inspectorTransformOrigin(clip)};object-fit:${inspectorObjectFit(clip)};border-radius:${Number(clip.settings.radius || 0)}px;filter:${inspectorFilter(clip)}`;
+            const filters = [
+    inspectorFilter(clip),
+    inspectorEffectFilter(clip.settings || {})
+].filter(Boolean).join(' ');
+
+const common =
+    `opacity:${clip.settings.opacity / 100};` +
+    `transform:${inspectorTransform(clip)};` +
+    `transform-origin:${inspectorTransformOrigin(clip)};` +
+    `object-fit:${inspectorObjectFit(clip)};` +
+    `border-radius:${Number(clip.settings.radius || 0)}px;` +
+    `filter:${filters}`;
 
             if (clip.type === 'video') {
                 els.preview.innerHTML = `<video class="ev-preview-media" src="${clip.url}" playsinline style="${common}"></video>`;
@@ -1233,7 +1254,11 @@ function inspectorFilter(clip) {
                     media.style.transformOrigin = inspectorTransformOrigin(clip);
                     media.style.objectFit = inspectorObjectFit(clip);
                     media.style.borderRadius = `${Number(clip.settings.radius || 0)}px`;
-                    media.style.filter = inspectorFilter(clip);
+                    media.style.filter =
+    [
+        inspectorFilter(clip),
+        inspectorEffectFilter(clip.settings || {})
+    ].filter(Boolean).join(' ');
                     els.preview.querySelectorAll('.ev-preview-vignette,.ev-preview-grain').forEach(node => node.remove());
                     els.preview.insertAdjacentHTML('beforeend', inspectorExtraOverlay(clip));
                 }
