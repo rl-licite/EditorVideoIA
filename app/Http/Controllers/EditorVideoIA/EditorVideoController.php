@@ -10,9 +10,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\EditorVideoIA\FFmpegRenderService;
 
 class EditorVideoController extends Controller
 {
+    protected FFmpegRenderService $ffmpeg;
+
+    public function __construct(FFmpegRenderService $ffmpeg)
+    {
+        $this->ffmpeg = $ffmpeg;
+    }
     public function index(Request $request)
     {
         $project = $this->resolveProject($request);
@@ -331,10 +338,33 @@ foreach ($jobs as $index => $job) {
     $jobs[$index]['status'] = 'processando';
     $jobs[$index]['worker'] = $running;
     $jobs[$index]['started_at'] = now()->toDateTimeString();
-
-    $jobs[$index]['progress'] = 100;
+$jobs[$index]['progress'] = 25;
+    $jobs[$index]['progress'] = 5;
     $jobs[$index]['status'] = 'concluido';
     $jobs[$index]['processed_at'] = now()->toDateTimeString();
+    if (!empty($job['source_url'])) {
+
+    try {
+
+        $result = $this->ffmpeg->render([
+            'input' => $job['source_url'],
+            'output' => $jobs[$index]['output_name'],
+            'template' => $job['template_snapshot'] ?? [],
+        ]);
+
+        $jobs[$index]['render'] = $result;
+        $jobs[$index]['render_status'] = 'ok';
+        $jobs[$index]['progress'] = 90;
+        $jobs[$index]['progress'] = 100;
+
+    } catch (\Throwable $e) {
+
+        $jobs[$index]['render_status'] = 'erro';
+        $jobs[$index]['render_error'] = $e->getMessage();
+
+    }
+
+}
     $jobs[$index]['finished_at'] = now()->toDateTimeString();
     $jobs[$index]['output_name'] = 'preview_lote_'.($index + 1).'_'.Str::slug($job['name'] ?? 'midia').'.mp4';
     $jobs[$index]['message'] = 'Processado pelo Worker '.$running.'.';
@@ -343,6 +373,10 @@ foreach ($jobs as $index => $job) {
         $timeline['batch_jobs'] = array_values($jobs);
         $timeline['meta']['version'] = '4.2-processamento-em-massa-blocos-3-4';
         $timeline['meta']['batch_processed_total'] = count($jobs);
+        $timeline['batch_queue']['waiting'] = collect($jobs)->where('status', 'aguardando')->count();
+$timeline['batch_queue']['processing'] = collect($jobs)->where('status', 'processando')->count();
+$timeline['batch_queue']['finished'] = collect($jobs)->where('status', 'concluido')->count();
+$timeline['batch_queue']['failed'] = collect($jobs)->where('render_status', 'erro')->count();
         $timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
 
         $project->timeline_data = $timeline;
