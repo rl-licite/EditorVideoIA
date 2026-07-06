@@ -124,15 +124,79 @@
             </div>
             <div class="ev-grid2">
                 <div><label>Opacidade</label><input id="clipOpacity" type="number" min="0" max="100" step="1"></div>
-                <div><label>Escala</label><input id="clipScale" type="number" min="10" max="300" step="1"></div>
+                <div><label>Modo</label><select id="clipTransformMode"><option value="fit">Ajustar</option><option value="fill">Preencher</option><option value="free">Livre</option></select></div>
             </div>
-            <div class="ev-grid2">
-                <div><label>X</label><input id="clipX" type="number" step="1"></div>
-                <div><label>Y</label><input id="clipY" type="number" step="1"></div>
+            <div class="ev-inspector-section">
+                <h3>Transformação profissional</h3>
+                <div class="ev-grid2">
+                    <div><label>Posição X</label><input id="clipX" type="number" step="1"></div>
+                    <div><label>Posição Y</label><input id="clipY" type="number" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Escala geral</label><input id="clipScale" type="number" min="10" max="500" step="1"></div>
+                    <div><label>Rotação</label><input id="clipRotation" type="number" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Escala X</label><input id="clipScaleX" type="number" min="10" max="500" step="1"></div>
+                    <div><label>Escala Y</label><input id="clipScaleY" type="number" min="10" max="500" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Anchor X</label><input id="clipAnchorX" type="number" min="0" max="100" step="1"></div>
+                    <div><label>Anchor Y</label><input id="clipAnchorY" type="number" min="0" max="100" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Inclinação X</label><input id="clipSkewX" type="number" min="-89" max="89" step="1"></div>
+                    <div><label>Inclinação Y</label><input id="clipSkewY" type="number" min="-89" max="89" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Crop / Zoom</label><input id="clipCropZoom" type="number" min="100" max="500" step="1"></div>
+                    <div><label>Borda arred.</label><input id="clipRadius" type="number" min="0" max="100" step="1"></div>
+                </div>
+                <label class="ev-check"><input id="clipLockRatio" type="checkbox"> Manter proporção X/Y</label>
+                <label class="ev-check"><input id="clipFlipX" type="checkbox"> Espelhar horizontal</label>
+                <label class="ev-check"><input id="clipFlipY" type="checkbox"> Espelhar vertical</label>
+                <button id="btnResetTransform" class="ev-secondary" type="button">Resetar transformação</button>
             </div>
-            <label>Rotação</label>
-            <input id="clipRotation" type="number" step="1">
+
+            <div class="ev-inspector-section">
+                <h3>Aparência</h3>
+                <div class="ev-grid2">
+                    <div><label>Brilho</label><input id="clipBrightness" type="number" min="0" max="300" step="1"></div>
+                    <div><label>Contraste</label><input id="clipContrast" type="number" min="0" max="300" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Saturação</label><input id="clipSaturation" type="number" min="0" max="300" step="1"></div>
+                    <div><label>Exposição</label><input id="clipExposure" type="number" min="-100" max="100" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Temperatura</label><input id="clipTemperature" type="number" min="-100" max="100" step="1"></div>
+                    <div><label>Matiz</label><input id="clipHue" type="number" min="-180" max="180" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Nitidez</label><input id="clipSharpen" type="number" min="0" max="100" step="1"></div>
+                    <div><label>Desfoque</label><input id="clipBlur" type="number" min="0" max="30" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Vinheta</label><input id="clipVignette" type="number" min="0" max="100" step="1"></div>
+                    <div><label>Granulação</label><input id="clipGrain" type="number" min="0" max="100" step="1"></div>
+                </div>
+            </div>
+
+            <div class="ev-inspector-section">
+                <h3>Áudio rápido</h3>
+                <div class="ev-grid2">
+                    <div><label>Ganho</label><input id="clipGain" type="number" min="0" max="300" step="1"></div>
+                    <div><label>Balance L/R</label><input id="clipBalance" type="number" min="-100" max="100" step="1"></div>
+                </div>
+                <div class="ev-grid2">
+                    <div><label>Fade In</label><input id="clipFadeIn" type="number" min="0" max="10" step="0.1"></div>
+                    <div><label>Fade Out</label><input id="clipFadeOut" type="number" min="0" max="10" step="0.1"></div>
+                </div>
+                <label class="ev-check"><input id="clipMute" type="checkbox"> Mudo</label>
+            </div>
+
             <button class="ev-primary" type="submit">Aplicar alterações</button>
+            <button id="btnResetInspector" type="button">Resetar ajustes</button>
             <button id="btnCutSelected" type="button">Cortar no playhead</button>
         </form>
         <div class="ev-help">

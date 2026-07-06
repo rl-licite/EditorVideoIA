@@ -70,7 +70,36 @@
             clipScale: byId('clipScale'),
             clipX: byId('clipX'),
             clipY: byId('clipY'),
-            clipRotation: byId('clipRotation')
+            clipRotation: byId('clipRotation'),
+            clipBrightness: byId('clipBrightness'),
+            clipContrast: byId('clipContrast'),
+            clipSaturation: byId('clipSaturation'),
+            clipExposure: byId('clipExposure'),
+            clipTemperature: byId('clipTemperature'),
+            clipHue: byId('clipHue'),
+            clipSharpen: byId('clipSharpen'),
+            clipBlur: byId('clipBlur'),
+            clipVignette: byId('clipVignette'),
+            clipGrain: byId('clipGrain'),
+            clipScaleX: byId('clipScaleX'),
+            clipScaleY: byId('clipScaleY'),
+            clipAnchorX: byId('clipAnchorX'),
+            clipAnchorY: byId('clipAnchorY'),
+            clipSkewX: byId('clipSkewX'),
+            clipSkewY: byId('clipSkewY'),
+            clipCropZoom: byId('clipCropZoom'),
+            clipRadius: byId('clipRadius'),
+            clipLockRatio: byId('clipLockRatio'),
+            clipTransformMode: byId('clipTransformMode'),
+            clipFlipX: byId('clipFlipX'),
+            clipFlipY: byId('clipFlipY'),
+            clipGain: byId('clipGain'),
+            clipBalance: byId('clipBalance'),
+            clipFadeIn: byId('clipFadeIn'),
+            clipFadeOut: byId('clipFadeOut'),
+            clipMute: byId('clipMute'),
+            btnResetInspector: byId('btnResetInspector'),
+            btnResetTransform: byId('btnResetTransform')
         }
     };
 
@@ -127,6 +156,33 @@
                 x: 0,
                 y: 0,
                 rotation: 0,
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                exposure: 0,
+                temperature: 0,
+                hue: 0,
+                sharpen: 0,
+                blur: 0,
+                vignette: 0,
+                grain: 0,
+                scaleX: 100,
+                scaleY: 100,
+                anchorX: 50,
+                anchorY: 50,
+                skewX: 0,
+                skewY: 0,
+                cropZoom: 100,
+                radius: 0,
+                lockRatio: true,
+                transformMode: 'fit',
+                flipX: false,
+                flipY: false,
+                gain: 100,
+                balance: 0,
+                fadeIn: 0,
+                fadeOut: 0,
+                mute: false,
                 ...(c.settings || {})
             }
         };
@@ -784,6 +840,33 @@
             els.fields.clipX.value = clip.settings.x;
             els.fields.clipY.value = clip.settings.y;
             els.fields.clipRotation.value = clip.settings.rotation;
+            els.fields.clipBrightness.value = clip.settings.brightness ?? 100;
+            els.fields.clipContrast.value = clip.settings.contrast ?? 100;
+            els.fields.clipSaturation.value = clip.settings.saturation ?? 100;
+            els.fields.clipExposure.value = clip.settings.exposure ?? 0;
+            els.fields.clipTemperature.value = clip.settings.temperature ?? 0;
+            els.fields.clipHue.value = clip.settings.hue ?? 0;
+            els.fields.clipSharpen.value = clip.settings.sharpen ?? 0;
+            els.fields.clipBlur.value = clip.settings.blur ?? 0;
+            els.fields.clipVignette.value = clip.settings.vignette ?? 0;
+            els.fields.clipGrain.value = clip.settings.grain ?? 0;
+            els.fields.clipScaleX.value = clip.settings.scaleX ?? 100;
+            els.fields.clipScaleY.value = clip.settings.scaleY ?? 100;
+            els.fields.clipAnchorX.value = clip.settings.anchorX ?? 50;
+            els.fields.clipAnchorY.value = clip.settings.anchorY ?? 50;
+            els.fields.clipSkewX.value = clip.settings.skewX ?? 0;
+            els.fields.clipSkewY.value = clip.settings.skewY ?? 0;
+            els.fields.clipCropZoom.value = clip.settings.cropZoom ?? 100;
+            els.fields.clipRadius.value = clip.settings.radius ?? 0;
+            els.fields.clipLockRatio.checked = clip.settings.lockRatio !== false;
+            els.fields.clipTransformMode.value = clip.settings.transformMode || 'fit';
+            els.fields.clipFlipX.checked = !!clip.settings.flipX;
+            els.fields.clipFlipY.checked = !!clip.settings.flipY;
+            els.fields.clipGain.value = clip.settings.gain ?? 100;
+            els.fields.clipBalance.value = clip.settings.balance ?? 0;
+            els.fields.clipFadeIn.value = clip.settings.fadeIn ?? 0;
+            els.fields.clipFadeOut.value = clip.settings.fadeOut ?? 0;
+            els.fields.clipMute.checked = !!clip.settings.mute;
         },
 
         readFormIntoClip({ saveHistory = true } = {}) {
@@ -803,10 +886,104 @@
                 scale: Number(els.fields.clipScale.value || 100),
                 x: Number(els.fields.clipX.value || 0),
                 y: Number(els.fields.clipY.value || 0),
-                rotation: Number(els.fields.clipRotation.value || 0)
+                rotation: Number(els.fields.clipRotation.value || 0),
+                brightness: Number(els.fields.clipBrightness.value || 100),
+                contrast: Number(els.fields.clipContrast.value || 100),
+                saturation: Number(els.fields.clipSaturation.value || 100),
+                exposure: Number(els.fields.clipExposure.value || 0),
+                temperature: Number(els.fields.clipTemperature.value || 0),
+                hue: Number(els.fields.clipHue.value || 0),
+                sharpen: Number(els.fields.clipSharpen.value || 0),
+                blur: Number(els.fields.clipBlur.value || 0),
+                vignette: Number(els.fields.clipVignette.value || 0),
+                grain: Number(els.fields.clipGrain.value || 0),
+                scaleX: Number(els.fields.clipScaleX.value || 100),
+                scaleY: Number(els.fields.clipScaleY.value || 100),
+                anchorX: Number(els.fields.clipAnchorX.value || 50),
+                anchorY: Number(els.fields.clipAnchorY.value || 50),
+                skewX: Number(els.fields.clipSkewX.value || 0),
+                skewY: Number(els.fields.clipSkewY.value || 0),
+                cropZoom: Number(els.fields.clipCropZoom.value || 100),
+                radius: Number(els.fields.clipRadius.value || 0),
+                lockRatio: !!els.fields.clipLockRatio.checked,
+                transformMode: els.fields.clipTransformMode.value || 'fit',
+                flipX: !!els.fields.clipFlipX.checked,
+                flipY: !!els.fields.clipFlipY.checked,
+                gain: Number(els.fields.clipGain.value || 100),
+                balance: Number(els.fields.clipBalance.value || 0),
+                fadeIn: Number(els.fields.clipFadeIn.value || 0),
+                fadeOut: Number(els.fields.clipFadeOut.value || 0),
+                mute: !!els.fields.clipMute.checked
             };
 
             return clip;
+        },
+
+        resetSelected() {
+            const clip = TimelineManager.getClip(state.selectedIds[0]);
+            if (!clip) return;
+            HistoryManager.push();
+            clip.settings = {
+                ...clip.settings,
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                exposure: 0,
+                temperature: 0,
+                hue: 0,
+                sharpen: 0,
+                blur: 0,
+                vignette: 0,
+                grain: 0,
+                scaleX: 100,
+                scaleY: 100,
+                anchorX: 50,
+                anchorY: 50,
+                skewX: 0,
+                skewY: 0,
+                cropZoom: 100,
+                radius: 0,
+                lockRatio: true,
+                transformMode: 'fit',
+                flipX: false,
+                flipY: false,
+                gain: 100,
+                balance: 0,
+                fadeIn: 0,
+                fadeOut: 0,
+                mute: false
+            };
+            this.update();
+            EditorEngine.renderAll();
+            setMsg('Ajustes profissionais resetados.');
+        },
+
+        resetTransformSelected() {
+            const clip = TimelineManager.getClip(state.selectedIds[0]);
+            if (!clip) return;
+            HistoryManager.push();
+            clip.settings = {
+                ...clip.settings,
+                scale: 100,
+                x: 0,
+                y: 0,
+                rotation: 0,
+                scaleX: 100,
+                scaleY: 100,
+                anchorX: 50,
+                anchorY: 50,
+                skewX: 0,
+                skewY: 0,
+                cropZoom: 100,
+                radius: 0,
+                lockRatio: true,
+                transformMode: 'fit',
+                flipX: false,
+                flipY: false
+            };
+            this.update();
+            EditorEngine.renderAll();
+            setMsg('Transformação resetada.');
         },
 
         apply(event) {
@@ -827,6 +1004,53 @@
             PreviewManager.update();
         }
     };
+
+    function inspectorFilter(clip) {
+        const s = clip.settings || {};
+        const exposure = 100 + Number(s.exposure || 0);
+        const temperature = Number(s.temperature || 0);
+        const sepia = Math.max(0, temperature) / 220;
+        const cool = Math.max(0, -temperature) / 240;
+        const blur = Number(s.blur || 0);
+        const hue = Number(s.hue || 0);
+        const contrast = Number(s.contrast ?? 100);
+        const brightness = Math.max(0, Number(s.brightness ?? 100) * exposure / 100);
+        const saturation = Number(s.saturation ?? 100);
+        return `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) sepia(${sepia}) opacity(${1 - cool * 0.06}) blur(${blur}px)`;
+    }
+
+    function inspectorTransform(clip) {
+        const s = clip.settings || {};
+        const scale = Number(s.scale ?? 100) / 100;
+        const cropZoom = Number(s.cropZoom ?? 100) / 100;
+        const scaleX = Number(s.scaleX ?? 100) / 100 * (s.flipX ? -1 : 1);
+        const scaleY = Number(s.scaleY ?? 100) / 100 * (s.flipY ? -1 : 1);
+        const skewX = Number(s.skewX || 0);
+        const skewY = Number(s.skewY || 0);
+        return `translate(${Number(s.x || 0)}px,${Number(s.y || 0)}px) rotate(${Number(s.rotation || 0)}deg) skew(${skewX}deg,${skewY}deg) scale(${scale * cropZoom * scaleX},${scale * cropZoom * scaleY})`;
+    }
+
+    function inspectorTransformOrigin(clip) {
+        const s = clip.settings || {};
+        return `${Number(s.anchorX ?? 50)}% ${Number(s.anchorY ?? 50)}%`;
+    }
+
+    function inspectorObjectFit(clip) {
+        const mode = clip.settings?.transformMode || 'fit';
+        if (mode === 'fill') return 'cover';
+        if (mode === 'free') return 'contain';
+        return 'contain';
+    }
+
+    function inspectorExtraOverlay(clip) {
+        const s = clip.settings || {};
+        const vignette = Math.max(0, Number(s.vignette || 0));
+        const grain = Math.max(0, Number(s.grain || 0));
+        if (!vignette && !grain) return '';
+        const vignetteHtml = vignette ? `<div class="ev-preview-vignette" style="opacity:${Math.min(.75, vignette / 100)}"></div>` : '';
+        const grainHtml = grain ? `<div class="ev-preview-grain" style="opacity:${Math.min(.45, grain / 100)}"></div>` : '';
+        return vignetteHtml + grainHtml;
+    }
 
     const PreviewManager = {
         activeClipId: null,
@@ -856,7 +1080,7 @@
             }
 
             els.previewInfo.textContent = clip.name;
-            const common = `opacity:${clip.settings.opacity / 100};transform:translate(${clip.settings.x}px,${clip.settings.y}px) scale(${clip.settings.scale / 100}) rotate(${clip.settings.rotation}deg)`;
+            const common = `opacity:${clip.settings.opacity / 100};transform:${inspectorTransform(clip)};transform-origin:${inspectorTransformOrigin(clip)};object-fit:${inspectorObjectFit(clip)};border-radius:${Number(clip.settings.radius || 0)}px;filter:${inspectorFilter(clip)}`;
 
             if (clip.type === 'video') {
                 els.preview.innerHTML = `<video class="ev-preview-media" src="${clip.url}" playsinline muted style="${common}"></video>`;
@@ -870,6 +1094,8 @@
             } else {
                 els.preview.innerHTML = `<div class="ev-preview-text" style="font-size:42px;font-weight:900;${common}">${escapeHtml(clip.name)}</div>`;
             }
+
+            els.preview.insertAdjacentHTML('beforeend', inspectorExtraOverlay(clip));
         },
 
         syncMedia(clip) {
@@ -878,7 +1104,7 @@
             const localTime = Math.max(0, state.currentTime - clip.start);
 
             if (this.mediaEl.tagName === 'VIDEO' || this.mediaEl.tagName === 'AUDIO') {
-                this.mediaEl.volume = Math.min(1, Math.max(0, Number(clip.settings.volume || 100) / 100));
+                this.mediaEl.volume = clip.settings.mute ? 0 : Math.min(1, Math.max(0, (Number(clip.settings.volume || 100) * Number(clip.settings.gain || 100) / 10000)));
                 this.mediaEl.playbackRate = Math.max(0.25, Number(clip.settings.speed || 1));
 
                 if (Number.isFinite(this.mediaEl.duration) && Math.abs((this.mediaEl.currentTime || 0) - localTime) > 0.28) {
@@ -910,7 +1136,13 @@
                 const media = els.preview.querySelector('.ev-preview-media, .ev-preview-text');
                 if (media) {
                     media.style.opacity = clip.settings.opacity / 100;
-                    media.style.transform = `translate(${clip.settings.x}px,${clip.settings.y}px) scale(${clip.settings.scale / 100}) rotate(${clip.settings.rotation}deg)`;
+                    media.style.transform = inspectorTransform(clip);
+                    media.style.transformOrigin = inspectorTransformOrigin(clip);
+                    media.style.objectFit = inspectorObjectFit(clip);
+                    media.style.borderRadius = `${Number(clip.settings.radius || 0)}px`;
+                    media.style.filter = inspectorFilter(clip);
+                    els.preview.querySelectorAll('.ev-preview-vignette,.ev-preview-grain').forEach(node => node.remove());
+                    els.preview.insertAdjacentHTML('beforeend', inspectorExtraOverlay(clip));
                 }
                 els.previewInfo.textContent = clip.name;
             }
@@ -1131,9 +1363,15 @@
                 button.addEventListener('click', () => TimelineManager.setTool(button.dataset.tool));
             });
 
+            els.fields.btnResetInspector?.addEventListener('click', () => InspectorManager.resetSelected());
+            els.fields.btnResetTransform?.addEventListener('click', () => InspectorManager.resetTransformSelected());
             els.inspectorForm?.addEventListener('submit', event => InspectorManager.apply(event));
             Object.values(els.fields).forEach(field => {
-                field?.addEventListener('input', () => InspectorManager.liveApply());
+                field?.addEventListener('input', () => {
+                    if (field === els.fields.clipScaleX && els.fields.clipLockRatio?.checked) els.fields.clipScaleY.value = field.value;
+                    if (field === els.fields.clipScaleY && els.fields.clipLockRatio?.checked) els.fields.clipScaleX.value = field.value;
+                    InspectorManager.liveApply();
+                });
                 field?.addEventListener('change', () => InspectorManager.liveApply());
             });
             els.save?.addEventListener('click', () => ProjectManager.save());

@@ -2,3 +2,15 @@
 
 /* Fase 6.5 Bloco 1 - estabilização do preview/player */
 .ev-preview-media,.ev-preview-text{transition:transform .12s linear,opacity .12s linear;will-change:transform,opacity}.ev-preview video.ev-preview-media{width:100%;height:100%;object-fit:contain}.ev-preview img.ev-preview-media{max-width:100%;max-height:100%;object-fit:contain}.ev-preview audio.ev-preview-media{width:82%;position:absolute;bottom:22px;left:9%}.ev-lane.dragover{box-shadow:inset 0 0 0 2px #38bdf8}.ev-clip{touch-action:none}.ev-selection-box{border-radius:8px}
+
+
+/* Recuperação 1 - Inspector Profissional */
+.ev-inspector-section{border:1px solid #253145;background:#0b1220;border-radius:14px;padding:10px;margin:8px 0 10px}.ev-inspector-section h3{font-size:13px;margin:0 0 9px;color:#bfdbfe}.ev-check{display:flex;align-items:center;gap:8px;background:#111827;border:1px solid #334155;border-radius:10px;padding:8px;margin:6px 0}.ev-check input{width:auto;margin:0}.ev-preview-vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at center, transparent 45%, rgba(0,0,0,.9) 100%);z-index:6}.ev-preview-grain{position:absolute;inset:0;pointer-events:none;z-index:7;background-image:repeating-radial-gradient(circle at 17% 23%, rgba(255,255,255,.20) 0 1px, transparent 1px 3px);mix-blend-mode:overlay}.ev-preview-media,.ev-preview-text{transform-origin:center center}.ev-inspector .ev-form{padding-bottom:24px}
+
+/* Recuperação 2 - Transformações profissionais */
+.ev-inspector-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(148,163,184,.22); }
+.ev-inspector-section h3 { margin: 0 0 10px; font-size: 13px; color: #dbeafe; }
+.ev-check { display:block; margin: 8px 0; color: #dbeafe; font-size: 12px; }
+.ev-secondary { width:100%; margin-top:8px; padding:9px 10px; border-radius:8px; border:1px solid #334155; background:#111827; color:#e5e7eb; font-weight:700; cursor:pointer; }
+.ev-secondary:hover { background:#1f2937; }
+.ev-preview-media, .ev-preview-text { will-change: transform, filter, opacity; }
