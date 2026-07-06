@@ -232,7 +232,7 @@ class EditorVideoController extends Controller
     public function createBatch(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'jobs' => ['required', 'array', 'min:1'],
+            'jobs' => ['required', 'array', 'min:1', 'max:100'],
             'jobs.*.asset_id' => ['nullable'],
             'jobs.*.name' => ['nullable', 'string', 'max:255'],
             'jobs.*.type' => ['nullable', 'string', 'max:30'],
@@ -260,13 +260,27 @@ class EditorVideoController extends Controller
                 'type' => $asset?->media_type ?? ($job['type'] ?? 'media'),
                 'url' => $asset ? route('editor-video.media.stream', $asset->storage_path) : ($job['url'] ?? null),
                 'stream_url' => $asset ? route('editor-video.media.stream', $asset->storage_path) : ($job['stream_url'] ?? ($job['url'] ?? null)),
-                'status' => 'pronto',
+                'status' => 'aguardando',
+'progress' => 0,
+'worker' => null,
+'priority' => 1,
+'retries' => 0,
                 'template_snapshot' => $snapshot,
                 'created_at' => now()->toDateTimeString(),
             ];
         }
 
         $timeline['batch_jobs'] = $jobs;
+        $timeline['batch_queue'] = [
+    'total' => count($jobs),
+    'waiting' => count($jobs),
+    'processing' => 0,
+    'finished' => 0,
+    'failed' => 0,
+    'paused' => false,
+    'workers' => 4,
+    'max_parallel' => 4,
+];
         $timeline['meta']['version'] = '4.2-processamento-em-massa-blocos-3-4';
         $timeline['meta']['batch_total'] = count($jobs);
         $timeline['meta']['batch_updated_at'] = now()->toDateTimeString();
