@@ -166,6 +166,8 @@
                 blur: 0,
                 vignette: 0,
                 grain: 0,
+effectPreset: 'none',
+effectIntensity: 100,
                 scaleX: 100,
                 scaleY: 100,
                 anchorX: 50,
@@ -1005,7 +1007,45 @@
         }
     };
 
-    function inspectorFilter(clip) {
+    
+function inspectorEffectFilter(settings){
+
+    const preset = settings.effectPreset || 'none';
+    const i = Math.max(0, Math.min(100, Number(settings.effectIntensity ?? 100))) / 100;
+
+    switch(preset){
+
+        case 'bw':
+            return 'grayscale(' + i + ')';
+
+        case 'sepia':
+            return 'sepia(' + i + ')';
+
+        case 'vintage':
+            return 'sepia('+(0.6*i)+') contrast('+(1+0.2*i)+') saturate('+(1-0.25*i)+')';
+
+        case 'cinema':
+            return 'contrast('+(1+0.25*i)+') saturate('+(1-0.10*i)+') brightness('+(1-0.05*i)+')';
+
+        case 'hdr':
+            return 'contrast('+(1+0.35*i)+') saturate('+(1+0.25*i)+') brightness('+(1+0.08*i)+')';
+
+        case 'vhs':
+            return 'contrast('+(1+0.18*i)+') saturate('+(1-0.35*i)+') hue-rotate('+(8*i)+'deg)';
+
+        case 'cold':
+            return 'hue-rotate(-12deg)';
+
+        case 'warm':
+            return 'hue-rotate(12deg)';
+
+        default:
+            return '';
+    }
+}
+
+function inspectorFilter(clip) {
+
         const s = clip.settings || {};
         const exposure = 100 + Number(s.exposure || 0);
         const temperature = Number(s.temperature || 0);
