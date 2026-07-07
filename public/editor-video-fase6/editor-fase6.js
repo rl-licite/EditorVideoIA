@@ -60,6 +60,18 @@
         btnStop: byId('btnStop'),
         snapToggle: byId('snapToggle'),
         assetCounter: byId('assetCounter'),
+                batchSummary: byId('batchSummary'),
+        batchProgressBar: byId('batchProgressBar'),
+        batchWaiting: byId('batchWaiting'),
+        batchProcessing: byId('batchProcessing'),
+        batchFinished: byId('batchFinished'),
+        batchFailed: byId('batchFailed'),
+        batchList: byId('batchList'),
+        btnBatchCreate: byId('btnBatchCreate'),
+        btnBatchStart: byId('btnBatchStart'),
+        btnBatchPause: byId('btnBatchPause'),
+        btnBatchResume: byId('btnBatchResume'),
+        btnBatchCancel: byId('btnBatchCancel'),
         fields: {
             clipName: byId('clipName'),
             clipStart: byId('clipStart'),
@@ -1559,6 +1571,105 @@ const common =
         }
     };
 
+  const BatchManager = {
+    async status() {
+        if (!routes.batchStatus) return;
+
+        try {
+            const result = await api(routes.batchStatus, { method: 'GET' });
+            this.render(result.timeline || {});
+        } catch (e) {}
+    },
+
+    async create() {
+        const videos = (state.assets || [])
+            .filter(asset => asset.type === 'video' || asset.media_type === 'video')
+            .slice(0, 100);
+
+        if (!videos.length) {
+            setMsg('Nenhum vídeo encontrado para criar fila.');
+            return;
+        }
+
+        const jobs = videos.map(asset => ({
+            asset_id: asset.id,
+            name: asset.name || asset.original_name,
+            type: 'video',
+            url: asset.url || asset.public_url,
+            stream_url: asset.url || asset.public_url
+        }));
+
+        const result = await api(routes.batchCreate, {
+            method: 'POST',
+            body: JSON.stringify({ jobs })
+        });
+
+        this.render(result.timeline || {});
+        setMsg('Fila criada com ' + jobs.length + ' vídeo(s).');
+    },
+
+    async start() {
+        const result = await api(routes.batchProcess, { method: 'POST' });
+        this.render(result.timeline || {});
+        setMsg(result.message || 'Processamento iniciado.');
+    },
+
+    async pause() {
+        await api(routes.batchPause, { method: 'POST' });
+        await this.status();
+        setMsg('Fila pausada.');
+    },
+
+    async resume() {
+        await api(routes.batchResume, { method: 'POST' });
+        await this.start();
+        setMsg('Fila retomada.');
+    },
+
+    async cancel() {
+        await api(routes.batchCancel, { method: 'POST' });
+        await this.status();
+        setMsg('Fila cancelada.');
+    },
+
+    render(timeline) {
+        const jobs = timeline.batch_jobs || [];
+        const queue = timeline.batch_queue || {};
+        const total = jobs.length || queue.total || 0;
+        const waiting = queue.waiting ?? jobs.filter(j => j.status === 'aguardando').length;
+        const processing = queue.processing ?? jobs.filter(j => j.status === 'processando').length;
+        const finished = queue.finished ?? jobs.filter(j => j.status === 'concluido').length;
+        const failed = queue.failed ?? jobs.filter(j => j.render_status === 'erro').length;
+        const percent = total ? Math.round((finished / total) * 100) : 0;
+
+        if (els.batchSummary) els.batchSummary.textContent = total + ' vídeo(s) na fila • ' + percent + '%';
+        if (els.batchProgressBar) els.batchProgressBar.style.width = percent + '%';
+        if (els.batchWaiting) els.batchWaiting.textContent = waiting;
+        if (els.batchProcessing) els.batchProcessing.textContent = processing;
+        if (els.batchFinished) els.batchFinished.textContent = finished;
+        if (els.batchFailed) els.batchFailed.textContent = failed;
+
+        if (els.batchList) {
+            els.batchList.innerHTML = jobs.slice(0, 100).map(job => `
+                <div class="ev-batch-job">
+                    <span>${escapeHtml(job.name || 'Vídeo')}</span>
+                    <span>${escapeHtml(job.status || 'aguardando')} • ${Number(job.progress || 0)}%</span>
+                </div>
+            `).join('');
+        }
+    },
+
+    bind() {
+        els.btnBatchCreate?.addEventListener('click', () => this.create());
+        els.btnBatchStart?.addEventListener('click', () => this.start());
+        els.btnBatchPause?.addEventListener('click', () => this.pause());
+        els.btnBatchResume?.addEventListener('click', () => this.resume());
+        els.btnBatchCancel?.addEventListener('click', () => this.cancel());
+
+        this.status();
+        setInterval(() => this.status(), 3000);
+    }
+};
     const EditorEngine = {
         renderAll() {
             TimelineManager.renderRuler();
@@ -1609,6 +1720,7 @@ const common =
 
         init() {
             this.bindUi();
+                        BatchManager.bind();
             this.renderAll();
             setMsg('Fase 6.5 Bloco 1 ativa: timeline, preview, play/pause, seleção múltipla e salvamento estabilizados.');
         }
