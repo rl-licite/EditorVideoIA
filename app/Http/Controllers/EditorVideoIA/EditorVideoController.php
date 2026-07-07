@@ -402,6 +402,40 @@ if ($jobs[$index]['retries'] < 3) {
 $timeline['batch_queue']['processing'] = collect($jobs)->where('status', 'processando')->count();
 $timeline['batch_queue']['finished'] = collect($jobs)->where('status', 'concluido')->count();
 $timeline['batch_queue']['failed'] = collect($jobs)->where('render_status', 'erro')->count();
+$timeline['batch_queue']['failed'] = collect($jobs)->where('render_status', 'erro')->count();
+
+$finishedJobs = collect($jobs)->where('status', 'concluido')->count();
+$totalJobs = collect($jobs)->count();
+
+$startedAt = collect($jobs)->pluck('started_at')->filter()->min();
+$finishedAt = collect($jobs)->pluck('finished_at')->filter()->max();
+
+$elapsedSeconds = $startedAt && $finishedAt
+    ? max(1, strtotime($finishedAt) - strtotime($startedAt))
+    : 0;
+
+$videosPerMinute = $elapsedSeconds > 0
+    ? round(($finishedJobs / $elapsedSeconds) * 60, 2)
+    : 0;
+
+$remainingJobs = max(0, $totalJobs - $finishedJobs);
+
+$etaMinutes = $videosPerMinute > 0
+    ? round($remainingJobs / $videosPerMinute, 2)
+    : null;
+
+$timeline['batch_queue']['stats'] = [
+    'total_jobs' => $totalJobs,
+    'finished_jobs' => $finishedJobs,
+    'remaining_jobs' => $remainingJobs,
+    'elapsed_seconds' => $elapsedSeconds,
+    'videos_per_minute' => $videosPerMinute,
+    'eta_minutes' => $etaMinutes,
+    'max_parallel' => $maxParallel,
+    'memory_limit' => ini_get('memory_limit'),
+];
+
+$timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
         $timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
 
         $project->timeline_data = $timeline;
