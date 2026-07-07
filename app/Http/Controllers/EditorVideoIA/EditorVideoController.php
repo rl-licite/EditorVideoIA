@@ -325,72 +325,76 @@ class EditorVideoController extends Controller
 }
         $jobs = $timeline['batch_jobs'] ?? [];
 
-       $maxParallel = $timeline['batch_queue']['max_parallel'] ?? 4;
-       $availableWorkers = range(1, $maxParallel);
-$busyWorkers = [];
+      $maxParallel = max(1, min(8, (int) ($timeline['batch_queue']['max_parallel'] ?? 4)));
 
-foreach ($jobs as $job) {
-    if (($job['status'] ?? null) === 'processando' && !empty($job['worker'])) {
-        $busyWorkers[] = $job['worker'];
-    }
-}
+$waitingJobs = collect($jobs)
+    ->filter(fn ($job) => is_array($job) && ($job['status'] ?? '') === 'aguardando')
+    ->sortBy([
+        ['priority', 'desc'],
+        ['created_at', 'asc'],
+    ])
+    ->take($maxParallel);
 
-$availableWorkers = array_values(array_diff($availableWorkers, $busyWorkers));
-$running = 0;
+foreach ($waitingJobs as $index => $job) {
 
-foreach ($jobs as $index => $job) {
-
-    if (!is_array($job)) {
-        continue;
-    }
-
-    if (($job['status'] ?? '') !== 'aguardando') {
-        continue;
-    }
-
-    if ($running >= $maxParallel) {
-        break;
-    }
-
-    $workerId = count($availableWorkers)
-    ? array_shift($availableWorkers)
-    : ++$running;
+    $workerId = ($index % $maxParallel) + 1;
 
     $jobs[$index]['status'] = 'processando';
     $jobs[$index]['worker'] = $workerId;
+    $jobs[$index]['progress'] = 10;
     $jobs[$index]['started_at'] = now()->toDateTimeString();
-$jobs[$index]['progress'] = 25;
-    $jobs[$index]['progress'] = 5;
-    $jobs[$index]['status'] = 'concluido';
-    $jobs[$index]['processed_at'] = now()->toDateTimeString();
-    if (!empty($job['source_url'])) {
+
+    $sourceUrl = $job['stream_url'] ?? ($job['url'] ?? null);
+    $outputName = 'render_lote_'.($index + 1).'_'.Str::slug(pathinfo($job['name'] ?? 'video', PATHINFO_FILENAME) ?: 'video').'.mp4';
 
     try {
+        $jobs[$index]['progress'] = 40;
 
-        $result = $this->ffmpeg->render([
-            'input' => $job['source_url'],
-            'output' => $jobs[$index]['output_name'],
-            'template' => $job['template_snapshot'] ?? [],
-        ]);
+        if ($sourceUrl) {
+            $result = $this->ffmpeg->render([
+                'input' => $sourceUrl,
+                'output' => $outputName,
+                'template' => $job['template_snapshot'] ?? [],
+            ]);
 
-        $jobs[$index]['render'] = $result;
-        $jobs[$index]['render_status'] = 'ok';
-        $jobs[$index]['progress'] = 90;
+            $jobs[$index]['render'] = $result;
+        }
+
         $jobs[$index]['progress'] = 100;
+        $jobs[$index]['status'] = 'concluido';
+        $jobs[$index]['render_status'] = 'ok';
+        $jobs[$index]['processed_at'] = now()->toDateTimeString();
+        $jobs[$index]['finished_at'] = now()->toDateTimeString();
+        $jobs[$index]['output_name'] = $outputName;
+        $jobs[$index]['message'] = 'Renderizado pelo Worker '.$workerId.'.';
 
     } catch (\Throwable $e) {
+      $jobs[$index]['retries'] = ($jobs[$index]['retries'] ?? 0) + 1;
 
-        $jobs[$index]['render_status'] = 'erro';
-        $jobs[$index]['render_error'] = $e->getMessage();
+$jobs[$index]['render_status'] = 'erro';
+$jobs[$index]['render_error'] = $e->getMessage();
 
-    }
+if ($jobs[$index]['retries'] < 3) {
 
-}
+    $jobs[$index]['status'] = 'aguardando';
+    $jobs[$index]['progress'] = 0;
+
+    $jobs[$index]['message'] =
+        'Falhou. Reagendado automaticamente (Tentativa '.$jobs[$index]['retries'].' de 3).';
+
+} else {
+
+    $jobs[$index]['status'] = 'erro';
+    $jobs[$index]['progress'] = 0;
+
     $jobs[$index]['finished_at'] = now()->toDateTimeString();
-    $jobs[$index]['output_name'] = 'preview_lote_'.($index + 1).'_'.Str::slug($job['name'] ?? 'midia').'.mp4';
-    $jobs[$index]['message'] = 'Processado pelo Worker '.$running.'.';
-}
 
+    $jobs[$index]['message'] =
+        'Render cancelado após 3 tentativas.';
+
+}
+    }
+}
         $timeline['batch_jobs'] = array_values($jobs);
         $timeline['meta']['version'] = '4.2-processamento-em-massa-blocos-3-4';
         $timeline['meta']['batch_processed_total'] = count($jobs);
@@ -421,6 +425,17 @@ $timeline['batch_queue']['failed'] = collect($jobs)->where('render_status', 'err
         $project = $this->resolveProject($request);
 
         $timeline = $this->normalizeTimeline($project->timeline_data);
+        foreach ($timeline['batch_jobs'] ?? [] as &$job) {
+
+    if (($job['status'] ?? '') === 'processando') {
+
+        $job['status'] = 'aguardando';
+        $job['worker'] = null;
+
+    }
+
+}
+unset($job);
         $timeline['batch_jobs'] = [];
         $timeline['meta']['batch_reset_at'] = now()->toDateTimeString();
         $project->timeline_data = $timeline;
