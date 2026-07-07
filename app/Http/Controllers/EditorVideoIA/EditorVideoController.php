@@ -485,28 +485,58 @@ public function cancelBatch(Request $request): JsonResponse
 
     $timeline = $this->normalizeTimeline($project->timeline_data);
 
-    foreach (($timeline['batch_jobs'] ?? []) as &$job) {
-        if (($job['status'] ?? '') === 'aguardando' || ($job['status'] ?? '') === 'processando') {
-            $job['status'] = 'cancelado';
+    $jobId = $request->input('job_id');
+
+    foreach ($timeline['batch_jobs'] ?? [] as &$job) {
+
+        if ($jobId) {
+
+            if (($job['id'] ?? null) !== $jobId) {
+                continue;
+            }
+
         }
+
+        if (in_array(($job['status'] ?? ''), ['aguardando', 'processando'])) {
+
+            $job['status'] = 'cancelado';
+            $job['worker'] = null;
+            $job['progress'] = 0;
+            $job['finished_at'] = now()->toDateTimeString();
+            $job['message'] = 'Cancelado pelo usuário.';
+
+        }
+
     }
+
+    unset($job);
+
+    $timeline['batch_queue']['waiting'] =
+        collect($timeline['batch_jobs'])->where('status', 'aguardando')->count();
+
+    $timeline['batch_queue']['processing'] =
+        collect($timeline['batch_jobs'])->where('status', 'processando')->count();
+
+    $timeline['batch_queue']['finished'] =
+        collect($timeline['batch_jobs'])->where('status', 'concluido')->count();
+
+    $timeline['batch_queue']['failed'] =
+        collect($timeline['batch_jobs'])->where('status', 'erro')->count();
+
+    $timeline['batch_queue']['cancelled'] =
+        collect($timeline['batch_jobs'])->where('status', 'cancelado')->count();
 
     $project->timeline_data = $timeline;
     $project->save();
 
     return response()->json([
         'ok' => true,
-        'message' => 'Fila cancelada.',
+        'message' => $jobId
+            ? 'Vídeo cancelado.'
+            : 'Fila cancelada.',
+        'timeline' => $timeline,
     ]);
 }
-    public function batchStatus(): JsonResponse
-    {
-        $project = $this->resolveProject($request);
-
-        $timeline = $this->normalizeTimeline($project->timeline_data);
-
-        return response()->json([
-            'ok' => true,
             'batch_jobs' => $timeline['batch_jobs'] ?? [],
             'timeline' => $timeline,
         ]);
