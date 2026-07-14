@@ -1608,13 +1608,43 @@ const common =
         setMsg('Fila criada com ' + jobs.length + ' vídeo(s).');
     },
 
+    running: false,
+
     async start() {
-        const result = await api(routes.batchProcess, { method: 'POST' });
-        this.render(result.timeline || {});
-        setMsg(result.message || 'Processamento iniciado.');
+        if (this.running) return;
+
+        this.running = true;
+        setMsg('Processamento iniciado. A fila continuara automaticamente.');
+
+        try {
+            while (this.running) {
+                const result = await api(routes.batchProcess, { method: 'POST' });
+                const timeline = result.timeline || {};
+                this.render(timeline);
+
+                if (result.paused || timeline.batch_queue?.paused) {
+                    setMsg('Fila pausada apos concluir o video atual.');
+                    break;
+                }
+
+                if (result.completed || timeline.batch_queue?.completed) {
+                    setMsg('Fila processada ate o fim.');
+                    break;
+                }
+
+                setMsg(result.message || 'Continuando para o proximo video...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        } catch (error) {
+            setMsg('O processamento foi interrompido: ' + (error.message || error));
+        } finally {
+            this.running = false;
+            await this.status();
+        }
     },
 
     async pause() {
+        this.running = false;
         await api(routes.batchPause, { method: 'POST' });
         await this.status();
         setMsg('Fila pausada.');
@@ -1627,6 +1657,7 @@ const common =
     },
 
     async cancel() {
+        this.running = false;
         await api(routes.batchCancel, { method: 'POST' });
         await this.status();
         setMsg('Fila cancelada.');

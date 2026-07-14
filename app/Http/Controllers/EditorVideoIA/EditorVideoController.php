@@ -309,56 +309,96 @@ class EditorVideoController extends Controller
         ]);
     }
 
+    public function batchStatus(Request $request): JsonResponse
+    {
+        $project = $this->resolveProject($request);
 
-   public function processBatch(Request $request): JsonResponse
-{
-    $project = $this->resolveProject($request);
-
-    $timeline = $this->normalizeTimeline($project->timeline_data);
-
-    if (($timeline['batch_queue']['paused'] ?? false) === true) {
         return response()->json([
             'ok' => true,
-            'message' => 'Fila pausada.',
-            'timeline' => $timeline,
+            'timeline' => $this->normalizeTimeline($project->timeline_data),
         ]);
     }
 
-    $jobs = $timeline['batch_jobs'] ?? [];
+    public function processBatch(Request $request): JsonResponse
+    {
+        $project = $this->resolveProject($request);
+        $timeline = $this->normalizeTimeline($project->timeline_data);
+        $jobs = array_values($timeline['batch_jobs'] ?? []);
 
-    $maxParallel = max(1, min(8, (int) ($timeline['batch_queue']['max_parallel'] ?? 4)));
-
-    $processedNow = 0;
-
-    foreach ($jobs as $index => $job) {
-        if (!is_array($job)) {
-            continue;
+        if (($timeline['batch_queue']['paused'] ?? false) === true) {
+            return response()->json([
+                'ok' => true,
+                'paused' => true,
+                'completed' => false,
+                'message' => 'Fila pausada.',
+                'timeline' => $timeline,
+            ]);
         }
 
-        if (($job['status'] ?? '') !== 'aguardando') {
-            continue;
+        // Recupera automaticamente um item que ficou preso caso uma requisicao anterior tenha sido interrompida.
+        foreach ($jobs as $index => $job) {
+            if (($job['status'] ?? '') !== 'processando') {
+                continue;
+            }
+
+            $startedAt = isset($job['started_at']) ? strtotime((string) $job['started_at']) : false;
+            if ($startedAt === false || $startedAt < now()->subMinutes(30)->timestamp) {
+                $jobs[$index]['status'] = 'aguardando';
+                $jobs[$index]['worker'] = null;
+                $jobs[$index]['progress'] = 0;
+                $jobs[$index]['message'] = 'Item recuperado automaticamente apos interrupcao.';
+            }
         }
 
-        $workerId = ($processedNow % $maxParallel) + 1;
+        $nextIndex = null;
+        foreach ($jobs as $index => $job) {
+            if (($job['status'] ?? '') === 'aguardando') {
+                $nextIndex = $index;
+                break;
+            }
+        }
 
-        $jobs[$index]['status'] = 'processando';
-        $jobs[$index]['worker'] = $workerId;
-        $jobs[$index]['progress'] = 10;
-        $jobs[$index]['started_at'] = $jobs[$index]['started_at'] ?? now()->toDateTimeString();
+        if ($nextIndex === null) {
+            $timeline['batch_jobs'] = $jobs;
+            $timeline = $this->refreshBatchQueue($timeline);
+            $project->timeline_data = $timeline;
+            $project->save();
+
+            return response()->json([
+                'ok' => true,
+                'processed_now' => 0,
+                'completed' => true,
+                'paused' => false,
+                'message' => 'Fila processada ate o fim.',
+                'timeline' => $timeline,
+            ]);
+        }
+
+        $workerId = ($nextIndex % max(1, (int) ($timeline['batch_queue']['max_parallel'] ?? 4))) + 1;
+        $job = $jobs[$nextIndex];
+
+        $jobs[$nextIndex]['status'] = 'processando';
+        $jobs[$nextIndex]['worker'] = $workerId;
+        $jobs[$nextIndex]['progress'] = 10;
+        $jobs[$nextIndex]['started_at'] = now()->toDateTimeString();
+        $jobs[$nextIndex]['message'] = 'Renderizacao iniciada pelo Worker '.$workerId.'.';
+
+        // Salva antes de iniciar o FFmpeg para que o andamento sobreviva a falhas da requisicao.
+        $timeline['batch_jobs'] = $jobs;
+        $timeline = $this->refreshBatchQueue($timeline);
+        $project->timeline_data = $timeline;
+        $project->save();
 
         $sourceUrl = $job['stream_url'] ?? ($job['url'] ?? null);
-
         $outputName = 'render_lote_'
-            .($index + 1).'_'
+            .($nextIndex + 1).'_'
             .Str::slug(pathinfo($job['name'] ?? 'video', PATHINFO_FILENAME) ?: 'video')
             .'.mp4';
 
         try {
             if (!$sourceUrl) {
-                throw new \RuntimeException('Arquivo de origem não encontrado para este vídeo.');
+                throw new \RuntimeException('Arquivo de origem nao encontrado para este video.');
             }
-
-            $jobs[$index]['progress'] = 40;
 
             $result = $this->ffmpeg->render([
                 'input' => $sourceUrl,
@@ -367,115 +407,107 @@ class EditorVideoController extends Controller
                 'template' => $job['template_snapshot'] ?? [],
             ]);
 
-            $jobs[$index]['progress'] = 100;
-            $jobs[$index]['status'] = 'concluido';
-            $jobs[$index]['render_status'] = 'ok';
-            $jobs[$index]['processed_at'] = now()->toDateTimeString();
-            $jobs[$index]['finished_at'] = now()->toDateTimeString();
-            $jobs[$index]['worker'] = $workerId;
-
-            $jobs[$index]['output_name'] = $result['output_name'] ?? $outputName;
-            $jobs[$index]['output_path'] = $result['output_path'] ?? null;
-            $jobs[$index]['relative_path'] = $result['relative_path'] ?? null;
-            $jobs[$index]['download_url'] = $result['download_url'] ?? null;
-            $jobs[$index]['size_bytes'] = $result['size_bytes'] ?? null;
-            $jobs[$index]['render'] = $result;
-
-            $jobs[$index]['message'] = 'MP4 renderizado e salvo pelo Worker '.$workerId.'.';
-
+            $jobs[$nextIndex] = array_merge($jobs[$nextIndex], [
+                'progress' => 100,
+                'status' => 'concluido',
+                'render_status' => 'ok',
+                'processed_at' => now()->toDateTimeString(),
+                'finished_at' => now()->toDateTimeString(),
+                'output_name' => $result['output_name'] ?? $outputName,
+                'output_path' => $result['output_path'] ?? null,
+                'relative_path' => $result['relative_path'] ?? null,
+                'download_url' => $result['download_url'] ?? null,
+                'size_bytes' => $result['size_bytes'] ?? null,
+                'render' => $result,
+                'message' => 'MP4 renderizado e salvo pelo Worker '.$workerId.'.',
+            ]);
         } catch (\Throwable $e) {
-            $jobs[$index]['retries'] = ($jobs[$index]['retries'] ?? 0) + 1;
-            $jobs[$index]['render_status'] = 'erro';
-            $jobs[$index]['render_error'] = $e->getMessage();
+            $retries = (int) ($jobs[$nextIndex]['retries'] ?? 0) + 1;
+            $jobs[$nextIndex]['retries'] = $retries;
+            $jobs[$nextIndex]['render_status'] = 'erro';
+            $jobs[$nextIndex]['render_error'] = $e->getMessage();
+            $jobs[$nextIndex]['worker'] = null;
+            $jobs[$nextIndex]['progress'] = 0;
 
-            if ($jobs[$index]['retries'] < 3) {
-                $jobs[$index]['status'] = 'aguardando';
-                $jobs[$index]['progress'] = 0;
-                $jobs[$index]['worker'] = null;
-                $jobs[$index]['message'] = 'Falhou. Reagendado automaticamente. Tentativa '.$jobs[$index]['retries'].' de 3.';
+            if ($retries < 3) {
+                $jobs[$nextIndex]['status'] = 'aguardando';
+                $jobs[$nextIndex]['message'] = 'Falhou e foi reagendado. Tentativa '.$retries.' de 3.';
             } else {
-                $jobs[$index]['status'] = 'erro';
-                $jobs[$index]['progress'] = 0;
-                $jobs[$index]['worker'] = null;
-                $jobs[$index]['finished_at'] = now()->toDateTimeString();
-                $jobs[$index]['message'] = 'Render cancelado após 3 tentativas.';
+                $jobs[$nextIndex]['status'] = 'erro';
+                $jobs[$nextIndex]['finished_at'] = now()->toDateTimeString();
+                $jobs[$nextIndex]['message'] = 'Render cancelado apos 3 tentativas.';
             }
         }
 
-        $processedNow++;
+        $timeline['batch_jobs'] = array_values($jobs);
+        $timeline = $this->refreshBatchQueue($timeline);
+        $timeline['meta']['version'] = 'final-homologacao-100-videos';
+        $timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
+
+        $project->timeline_data = $timeline;
+        $project->settings = array_merge($project->settings ?? [], [
+            'etapa' => 'final-homologacao-100-videos',
+            'batch_finished_total' => $timeline['batch_queue']['finished'] ?? 0,
+        ]);
+        $project->save();
+
+        $completed = (bool) ($timeline['batch_queue']['completed'] ?? false);
+
+        return response()->json([
+            'ok' => true,
+            'processed_now' => 1,
+            'completed' => $completed,
+            'paused' => false,
+            'message' => $completed
+                ? 'Fila processada ate o fim.'
+                : 'Video processado. Continuando automaticamente...',
+            'timeline' => $this->normalizeTimeline($project->fresh()->timeline_data),
+        ]);
     }
 
-    $totalJobs = collect($jobs)->count();
-    $finishedJobs = collect($jobs)->where('status', 'concluido')->count();
-    $waitingJobs = collect($jobs)->where('status', 'aguardando')->count();
-    $processingJobs = collect($jobs)->where('status', 'processando')->count();
-    $failedJobs = collect($jobs)->where('status', 'erro')->count();
-    $cancelledJobs = collect($jobs)->where('status', 'cancelado')->count();
+    private function refreshBatchQueue(array $timeline): array
+    {
+        $jobs = collect($timeline['batch_jobs'] ?? []);
+        $totalJobs = $jobs->count();
+        $finishedJobs = $jobs->where('status', 'concluido')->count();
+        $waitingJobs = $jobs->where('status', 'aguardando')->count();
+        $processingJobs = $jobs->where('status', 'processando')->count();
+        $failedJobs = $jobs->where('status', 'erro')->count();
+        $cancelledJobs = $jobs->where('status', 'cancelado')->count();
 
-    $startedAt = collect($jobs)->pluck('started_at')->filter()->min();
-    $finishedAt = collect($jobs)->pluck('finished_at')->filter()->max();
+        $startedAt = $jobs->pluck('started_at')->filter()->min();
+        $lastFinishedAt = $jobs->pluck('finished_at')->filter()->max();
+        $elapsedSeconds = $startedAt && $lastFinishedAt
+            ? max(1, strtotime((string) $lastFinishedAt) - strtotime((string) $startedAt))
+            : 0;
+        $videosPerMinute = $elapsedSeconds > 0
+            ? round(($finishedJobs / $elapsedSeconds) * 60, 2)
+            : 0;
+        $remainingJobs = max(0, $waitingJobs + $processingJobs);
 
-    $elapsedSeconds = $startedAt && $finishedAt
-        ? max(1, strtotime($finishedAt) - strtotime($startedAt))
-        : 0;
+        $timeline['batch_queue'] = array_merge($timeline['batch_queue'] ?? [], [
+            'total' => $totalJobs,
+            'waiting' => $waitingJobs,
+            'processing' => $processingJobs,
+            'finished' => $finishedJobs,
+            'failed' => $failedJobs,
+            'cancelled' => $cancelledJobs,
+            'completed' => $waitingJobs === 0 && $processingJobs === 0,
+            'stats' => [
+                'total_jobs' => $totalJobs,
+                'finished_jobs' => $finishedJobs,
+                'remaining_jobs' => $remainingJobs,
+                'elapsed_seconds' => $elapsedSeconds,
+                'videos_per_minute' => $videosPerMinute,
+                'eta_minutes' => $videosPerMinute > 0 ? round($remainingJobs / $videosPerMinute, 2) : null,
+                'memory_limit' => ini_get('memory_limit'),
+            ],
+        ]);
 
-    $videosPerMinute = $elapsedSeconds > 0
-        ? round(($finishedJobs / $elapsedSeconds) * 60, 2)
-        : 0;
+        return $timeline;
+    }
 
-    $remainingJobs = max(0, $totalJobs - $finishedJobs - $failedJobs - $cancelledJobs);
-
-    $etaMinutes = $videosPerMinute > 0
-        ? round($remainingJobs / $videosPerMinute, 2)
-        : null;
-
-    $timeline['batch_jobs'] = array_values($jobs);
-
-    $timeline['batch_queue'] = array_merge($timeline['batch_queue'] ?? [], [
-        'waiting' => $waitingJobs,
-        'processing' => $processingJobs,
-        'finished' => $finishedJobs,
-        'failed' => $failedJobs,
-        'cancelled' => $cancelledJobs,
-        'completed' => $waitingJobs === 0 && $processingJobs === 0,
-        'max_parallel' => $maxParallel,
-        'stats' => [
-            'total_jobs' => $totalJobs,
-            'finished_jobs' => $finishedJobs,
-            'remaining_jobs' => $remainingJobs,
-            'elapsed_seconds' => $elapsedSeconds,
-            'videos_per_minute' => $videosPerMinute,
-            'eta_minutes' => $etaMinutes,
-            'memory_limit' => ini_get('memory_limit'),
-        ],
-    ]);
-
-    $timeline['meta']['version'] = 'final-100-videos-blocos-1-2';
-    $timeline['meta']['batch_processed_total'] = $totalJobs;
-    $timeline['meta']['batch_finished_total'] = $finishedJobs;
-    $timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
-
-    $project->timeline_data = $timeline;
-    $project->settings = array_merge($project->settings ?? [], [
-        'etapa' => 'final-100-videos',
-        'blocos' => '1-2',
-        'batch_processed_total' => $totalJobs,
-        'batch_finished_total' => $finishedJobs,
-    ]);
-    $project->save();
-
-    return response()->json([
-        'ok' => true,
-        'message' => $waitingJobs === 0
-            ? 'Fila processada até o fim.'
-            : 'Fila processada parcialmente. Ainda existem vídeos aguardando.',
-        'processed_now' => $processedNow,
-        'batch_jobs' => $timeline['batch_jobs'],
-        'timeline' => $this->normalizeTimeline($project->fresh()->timeline_data),
-    ]);
-}
-
-    public function resetBatch(): JsonResponse
+    public function resetBatch(Request $request): JsonResponse
     {
         $project = $this->resolveProject($request);
 
