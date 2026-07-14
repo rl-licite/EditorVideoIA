@@ -46,6 +46,8 @@ Route::post('/editor-video/export/process', [EditorVideoIAController::class, 'pr
 Route::post('/editor-video/export/reset', [EditorVideoIAController::class, 'resetExport'])->name('editor-video.export.reset');
 Route::get('/editor-video/export/status', [EditorVideoIAController::class, 'exportStatus'])->name('editor-video.export.status');
 Route::get('/editor-video/export/download/{index}', [EditorVideoIAController::class, 'downloadExport'])->name('editor-video.export.download');
+Route::get('/editor-video/export/download-all', [EditorVideoIAController::class, 'downloadAllExports'])
+    ->name('editor-video.export.download-all');
 Route::get('/editor-video/health', [EditorVideoIAHealthController::class, 'index'])->name('editor-video.health');
 
 /* Templates editaveis - CTA/TCA */

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Services\EditorVideoIA\FFmpegRenderService;
+use ZipArchive;
 
 class EditorVideoController extends Controller
 {
@@ -309,150 +310,170 @@ class EditorVideoController extends Controller
     }
 
 
-    public function processBatch(Request $request): JsonResponse
-    {
-        $project = $this->resolveProject($request);
+   public function processBatch(Request $request): JsonResponse
+{
+    $project = $this->resolveProject($request);
 
-        $timeline = $this->normalizeTimeline($project->timeline_data);
-        if (($timeline['batch_queue']['paused'] ?? false) === true) {
+    $timeline = $this->normalizeTimeline($project->timeline_data);
 
-    return response()->json([
-        'ok' => true,
-        'message' => 'Fila pausada.',
-        'timeline' => $timeline,
-    ]);
+    if (($timeline['batch_queue']['paused'] ?? false) === true) {
+        return response()->json([
+            'ok' => true,
+            'message' => 'Fila pausada.',
+            'timeline' => $timeline,
+        ]);
+    }
 
-}
-        $jobs = $timeline['batch_jobs'] ?? [];
+    $jobs = $timeline['batch_jobs'] ?? [];
 
-      $maxParallel = max(1, min(8, (int) ($timeline['batch_queue']['max_parallel'] ?? 4)));
+    $maxParallel = max(1, min(8, (int) ($timeline['batch_queue']['max_parallel'] ?? 4)));
 
-$waitingJobs = collect($jobs)
-    ->filter(fn ($job) => is_array($job) && ($job['status'] ?? '') === 'aguardando')
-    ->sortBy([
-        ['priority', 'desc'],
-        ['created_at', 'asc'],
-    ])
-    ->take($maxParallel);
+    $processedNow = 0;
 
-foreach ($waitingJobs as $index => $job) {
+    foreach ($jobs as $index => $job) {
+        if (!is_array($job)) {
+            continue;
+        }
 
-    $workerId = ($index % $maxParallel) + 1;
+        if (($job['status'] ?? '') !== 'aguardando') {
+            continue;
+        }
 
-    $jobs[$index]['status'] = 'processando';
-    $jobs[$index]['worker'] = $workerId;
-    $jobs[$index]['progress'] = 10;
-    $jobs[$index]['started_at'] = now()->toDateTimeString();
+        $workerId = ($processedNow % $maxParallel) + 1;
 
-    $sourceUrl = $job['stream_url'] ?? ($job['url'] ?? null);
-    $outputName = 'render_lote_'.($index + 1).'_'.Str::slug(pathinfo($job['name'] ?? 'video', PATHINFO_FILENAME) ?: 'video').'.mp4';
+        $jobs[$index]['status'] = 'processando';
+        $jobs[$index]['worker'] = $workerId;
+        $jobs[$index]['progress'] = 10;
+        $jobs[$index]['started_at'] = $jobs[$index]['started_at'] ?? now()->toDateTimeString();
 
-    try {
-        $jobs[$index]['progress'] = 40;
+        $sourceUrl = $job['stream_url'] ?? ($job['url'] ?? null);
 
-        if ($sourceUrl) {
+        $outputName = 'render_lote_'
+            .($index + 1).'_'
+            .Str::slug(pathinfo($job['name'] ?? 'video', PATHINFO_FILENAME) ?: 'video')
+            .'.mp4';
+
+        try {
+            if (!$sourceUrl) {
+                throw new \RuntimeException('Arquivo de origem não encontrado para este vídeo.');
+            }
+
+            $jobs[$index]['progress'] = 40;
+
             $result = $this->ffmpeg->render([
                 'input' => $sourceUrl,
                 'output' => $outputName,
+                'project_id' => $project->id,
                 'template' => $job['template_snapshot'] ?? [],
             ]);
 
+            $jobs[$index]['progress'] = 100;
+            $jobs[$index]['status'] = 'concluido';
+            $jobs[$index]['render_status'] = 'ok';
+            $jobs[$index]['processed_at'] = now()->toDateTimeString();
+            $jobs[$index]['finished_at'] = now()->toDateTimeString();
+            $jobs[$index]['worker'] = $workerId;
+
+            $jobs[$index]['output_name'] = $result['output_name'] ?? $outputName;
+            $jobs[$index]['output_path'] = $result['output_path'] ?? null;
+            $jobs[$index]['relative_path'] = $result['relative_path'] ?? null;
+            $jobs[$index]['download_url'] = $result['download_url'] ?? null;
+            $jobs[$index]['size_bytes'] = $result['size_bytes'] ?? null;
             $jobs[$index]['render'] = $result;
+
+            $jobs[$index]['message'] = 'MP4 renderizado e salvo pelo Worker '.$workerId.'.';
+
+        } catch (\Throwable $e) {
+            $jobs[$index]['retries'] = ($jobs[$index]['retries'] ?? 0) + 1;
+            $jobs[$index]['render_status'] = 'erro';
+            $jobs[$index]['render_error'] = $e->getMessage();
+
+            if ($jobs[$index]['retries'] < 3) {
+                $jobs[$index]['status'] = 'aguardando';
+                $jobs[$index]['progress'] = 0;
+                $jobs[$index]['worker'] = null;
+                $jobs[$index]['message'] = 'Falhou. Reagendado automaticamente. Tentativa '.$jobs[$index]['retries'].' de 3.';
+            } else {
+                $jobs[$index]['status'] = 'erro';
+                $jobs[$index]['progress'] = 0;
+                $jobs[$index]['worker'] = null;
+                $jobs[$index]['finished_at'] = now()->toDateTimeString();
+                $jobs[$index]['message'] = 'Render cancelado após 3 tentativas.';
+            }
         }
 
-        $jobs[$index]['progress'] = 100;
-        $jobs[$index]['status'] = 'concluido';
-        $jobs[$index]['render_status'] = 'ok';
-        $jobs[$index]['processed_at'] = now()->toDateTimeString();
-        $jobs[$index]['finished_at'] = now()->toDateTimeString();
-        $jobs[$index]['output_name'] = $outputName;
-        $jobs[$index]['message'] = 'Renderizado pelo Worker '.$workerId.'.';
-
-    } catch (\Throwable $e) {
-      $jobs[$index]['retries'] = ($jobs[$index]['retries'] ?? 0) + 1;
-
-$jobs[$index]['render_status'] = 'erro';
-$jobs[$index]['render_error'] = $e->getMessage();
-
-if ($jobs[$index]['retries'] < 3) {
-
-    $jobs[$index]['status'] = 'aguardando';
-    $jobs[$index]['progress'] = 0;
-
-    $jobs[$index]['message'] =
-        'Falhou. Reagendado automaticamente (Tentativa '.$jobs[$index]['retries'].' de 3).';
-
-} else {
-
-    $jobs[$index]['status'] = 'erro';
-    $jobs[$index]['progress'] = 0;
-
-    $jobs[$index]['finished_at'] = now()->toDateTimeString();
-
-    $jobs[$index]['message'] =
-        'Render cancelado após 3 tentativas.';
-
-}
+        $processedNow++;
     }
+
+    $totalJobs = collect($jobs)->count();
+    $finishedJobs = collect($jobs)->where('status', 'concluido')->count();
+    $waitingJobs = collect($jobs)->where('status', 'aguardando')->count();
+    $processingJobs = collect($jobs)->where('status', 'processando')->count();
+    $failedJobs = collect($jobs)->where('status', 'erro')->count();
+    $cancelledJobs = collect($jobs)->where('status', 'cancelado')->count();
+
+    $startedAt = collect($jobs)->pluck('started_at')->filter()->min();
+    $finishedAt = collect($jobs)->pluck('finished_at')->filter()->max();
+
+    $elapsedSeconds = $startedAt && $finishedAt
+        ? max(1, strtotime($finishedAt) - strtotime($startedAt))
+        : 0;
+
+    $videosPerMinute = $elapsedSeconds > 0
+        ? round(($finishedJobs / $elapsedSeconds) * 60, 2)
+        : 0;
+
+    $remainingJobs = max(0, $totalJobs - $finishedJobs - $failedJobs - $cancelledJobs);
+
+    $etaMinutes = $videosPerMinute > 0
+        ? round($remainingJobs / $videosPerMinute, 2)
+        : null;
+
+    $timeline['batch_jobs'] = array_values($jobs);
+
+    $timeline['batch_queue'] = array_merge($timeline['batch_queue'] ?? [], [
+        'waiting' => $waitingJobs,
+        'processing' => $processingJobs,
+        'finished' => $finishedJobs,
+        'failed' => $failedJobs,
+        'cancelled' => $cancelledJobs,
+        'completed' => $waitingJobs === 0 && $processingJobs === 0,
+        'max_parallel' => $maxParallel,
+        'stats' => [
+            'total_jobs' => $totalJobs,
+            'finished_jobs' => $finishedJobs,
+            'remaining_jobs' => $remainingJobs,
+            'elapsed_seconds' => $elapsedSeconds,
+            'videos_per_minute' => $videosPerMinute,
+            'eta_minutes' => $etaMinutes,
+            'memory_limit' => ini_get('memory_limit'),
+        ],
+    ]);
+
+    $timeline['meta']['version'] = 'final-100-videos-blocos-1-2';
+    $timeline['meta']['batch_processed_total'] = $totalJobs;
+    $timeline['meta']['batch_finished_total'] = $finishedJobs;
+    $timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
+
+    $project->timeline_data = $timeline;
+    $project->settings = array_merge($project->settings ?? [], [
+        'etapa' => 'final-100-videos',
+        'blocos' => '1-2',
+        'batch_processed_total' => $totalJobs,
+        'batch_finished_total' => $finishedJobs,
+    ]);
+    $project->save();
+
+    return response()->json([
+        'ok' => true,
+        'message' => $waitingJobs === 0
+            ? 'Fila processada até o fim.'
+            : 'Fila processada parcialmente. Ainda existem vídeos aguardando.',
+        'processed_now' => $processedNow,
+        'batch_jobs' => $timeline['batch_jobs'],
+        'timeline' => $this->normalizeTimeline($project->fresh()->timeline_data),
+    ]);
 }
-        $timeline['batch_jobs'] = array_values($jobs);
-        $timeline['meta']['version'] = '4.2-processamento-em-massa-blocos-3-4';
-        $timeline['meta']['batch_processed_total'] = count($jobs);
-        $timeline['batch_queue']['waiting'] = collect($jobs)->where('status', 'aguardando')->count();
-$timeline['batch_queue']['processing'] = collect($jobs)->where('status', 'processando')->count();
-$timeline['batch_queue']['finished'] = collect($jobs)->where('status', 'concluido')->count();
-$timeline['batch_queue']['failed'] = collect($jobs)->where('render_status', 'erro')->count();
-$timeline['batch_queue']['failed'] = collect($jobs)->where('render_status', 'erro')->count();
-
-$finishedJobs = collect($jobs)->where('status', 'concluido')->count();
-$totalJobs = collect($jobs)->count();
-
-$startedAt = collect($jobs)->pluck('started_at')->filter()->min();
-$finishedAt = collect($jobs)->pluck('finished_at')->filter()->max();
-
-$elapsedSeconds = $startedAt && $finishedAt
-    ? max(1, strtotime($finishedAt) - strtotime($startedAt))
-    : 0;
-
-$videosPerMinute = $elapsedSeconds > 0
-    ? round(($finishedJobs / $elapsedSeconds) * 60, 2)
-    : 0;
-
-$remainingJobs = max(0, $totalJobs - $finishedJobs);
-
-$etaMinutes = $videosPerMinute > 0
-    ? round($remainingJobs / $videosPerMinute, 2)
-    : null;
-
-$timeline['batch_queue']['stats'] = [
-    'total_jobs' => $totalJobs,
-    'finished_jobs' => $finishedJobs,
-    'remaining_jobs' => $remainingJobs,
-    'elapsed_seconds' => $elapsedSeconds,
-    'videos_per_minute' => $videosPerMinute,
-    'eta_minutes' => $etaMinutes,
-    'max_parallel' => $maxParallel,
-    'memory_limit' => ini_get('memory_limit'),
-];
-
-$timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
-        $timeline['meta']['batch_processed_at'] = now()->toDateTimeString();
-
-        $project->timeline_data = $timeline;
-        $project->settings = array_merge($project->settings ?? [], [
-            'etapa' => '4.2',
-            'blocos' => '3-4',
-            'batch_processed_total' => count($jobs),
-        ]);
-        $project->save();
-
-        return response()->json([
-            'ok' => true,
-            'message' => 'Fila processada com sucesso.',
-            'batch_jobs' => $timeline['batch_jobs'],
-            'timeline' => $this->normalizeTimeline($project->fresh()->timeline_data),
-        ]);
-    }
 
     public function resetBatch(): JsonResponse
     {
@@ -571,10 +592,8 @@ public function cancelBatch(Request $request): JsonResponse
         'timeline' => $timeline,
     ]);
 }
-            'batch_jobs' => $timeline['batch_jobs'] ?? [],
-            'timeline' => $timeline,
-        ]);
-    }
+
+
 
 
 
@@ -659,84 +678,127 @@ public function cancelBatch(Request $request): JsonResponse
         ]);
     }
 
-    public function processExport(): JsonResponse
-    {
-        $project = $this->resolveProject($request);
+    public function processExport(Request $request): JsonResponse
+{
+    $project = $this->resolveProject($request);
 
-        $timeline = $this->normalizeTimeline($project->timeline_data);
-        $jobs = $timeline['export_jobs'] ?? [];
+    $timeline = $this->normalizeTimeline($project->timeline_data);
+    $batchJobs = $timeline['batch_jobs'] ?? [];
+    $exportJobs = $timeline['export_jobs'] ?? [];
 
-        Storage::disk('public')->makeDirectory('editorvideoia/exports');
-
-        foreach ($jobs as $index => $job) {
-            if (!is_array($job)) {
-                continue;
-            }
-
-            $manifest = [
-                'editor' => 'EditorVideoIA',
-                'etapa' => '5.2 - Blocos 3 e 4',
-                'tipo' => 'pacote de exportacao local',
-                'observacao' => 'Nesta etapa o sistema gera arquivo baixavel com configuracao, timeline e qualidade. O render real com FFmpeg entra na proxima etapa.',
-                'nome' => $job['name'] ?? 'Exportacao',
-                'resolucao' => $job['resolution'] ?? '1920x1080',
-                'fps' => $job['fps'] ?? 30,
-                'qualidade' => $job['quality'] ?? 'alta',
-                'bitrate' => $job['bitrate'] ?? 'auto',
-                'formato_solicitado' => $job['format'] ?? 'mp4',
-                'template' => $timeline['template'] ?? [],
-                'canvas' => $timeline['canvas'] ?? [],
-                'overlays' => $timeline['overlays'] ?? [],
-                'media_adjustments' => $timeline['media_adjustments'] ?? [],
-                'criado_em' => now()->toDateTimeString(),
-            ];
-
-            $fileName = 'render_preview_'.($index + 1).'_'.Str::slug(pathinfo($job['name'] ?? 'video', PATHINFO_FILENAME) ?: 'video').'.json';
-            $filePath = 'editorvideoia/exports/'.$fileName;
-            Storage::disk('public')->put($filePath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-
-            $jobs[$index]['status'] = 'concluido';
-            $jobs[$index]['progress'] = 100;
-            $jobs[$index]['processed_at'] = now()->toDateTimeString();
-            $jobs[$index]['message'] = 'Pacote de exportacao gerado com arquivo baixavel. FFmpeg real entra na proxima etapa.';
-            $jobs[$index]['output_file'] = $filePath;
-            $jobs[$index]['download_url'] = route('editor-video.export.download', ['index' => $index]);
+    foreach ($batchJobs as $index => $job) {
+        if (!is_array($job)) {
+            continue;
         }
 
-        $timeline['export_jobs'] = array_values($jobs);
-        $timeline['meta']['export_processed_at'] = now()->toDateTimeString();
-        $timeline['meta']['export_processed_total'] = count($jobs);
-        $timeline['meta']['version'] = '5.2-download-exportacao-blocos-3-4';
+        if (($job['status'] ?? '') !== 'concluido') {
+            continue;
+        }
 
-        $project->timeline_data = $timeline;
-        $project->save();
+        $relativePath = $job['relative_path'] ?? null;
 
-        return response()->json([
-            'ok' => true,
-            'message' => 'Fila de exportacao processada com arquivos baixaveis.',
-            'timeline' => $this->normalizeTimeline($project->fresh()->timeline_data),
+        if (!$relativePath) {
+            continue;
+        }
+
+        $exportJobs[$index] = array_merge($exportJobs[$index] ?? [], [
+            'id' => $job['id'] ?? ('export_'.$index),
+            'name' => $job['name'] ?? ('video_'.$index),
+            'status' => 'concluido',
+            'progress' => 100,
+            'format' => 'mp4',
+            'output_name' => $job['output_name'] ?? basename($relativePath),
+            'output_file' => $relativePath,
+            'relative_path' => $relativePath,
+            'download_url' => route('editor-video.export.download', ['index' => $index]),
+            'processed_at' => now()->toDateTimeString(),
+            'message' => 'MP4 pronto para download.',
         ]);
     }
 
-    public function downloadExport(int $index)
-    {
-        $project = $this->resolveProject($request);
+    $timeline['export_jobs'] = array_values($exportJobs);
+    $timeline['meta']['export_processed_at'] = now()->toDateTimeString();
+    $timeline['meta']['export_processed_total'] = count($exportJobs);
+    $timeline['meta']['version'] = 'final-100-videos-bloco-3-process-export';
 
-        $timeline = $this->normalizeTimeline($project->timeline_data);
-        $jobs = $timeline['export_jobs'] ?? [];
-        $job = $jobs[$index] ?? null;
+    $project->timeline_data = $timeline;
+    $project->save();
 
-        abort_unless(is_array($job) && !empty($job['output_file']), 404, 'Arquivo de exportacao nao encontrado.');
-        abort_unless(Storage::disk('public')->exists($job['output_file']), 404, 'Arquivo de exportacao ainda nao foi gerado.');
+    return response()->json([
+        'ok' => true,
+        'message' => 'Downloads dos MP4 preparados.',
+        'timeline' => $this->normalizeTimeline($project->fresh()->timeline_data),
+    ]);
+}
 
-        $fullPath = Storage::disk('public')->path($job['output_file']);
-        $downloadName = pathinfo($job['output_name'] ?? basename($job['output_file']), PATHINFO_FILENAME).'.json';
+   public function downloadExport(Request $request, int $index)
+{
+    $project = $this->resolveProject($request);
 
-        return response()->download($fullPath, $downloadName, [
-            'Content-Type' => 'application/json; charset=utf-8',
-        ]);
+    $timeline = $this->normalizeTimeline($project->timeline_data);
+    $jobs = $timeline['export_jobs'] ?? [];
+    $job = $jobs[$index] ?? null;
+
+    abort_unless(is_array($job), 404, 'Exportacao nao encontrada.');
+
+    $relativePath = $job['relative_path'] ?? $job['output_file'] ?? null;
+
+    abort_unless($relativePath, 404, 'Arquivo de exportacao nao encontrado.');
+    abort_unless(Storage::disk('public')->exists($relativePath), 404, 'Arquivo de exportacao ainda nao foi gerado.');
+
+    $fullPath = Storage::disk('public')->path($relativePath);
+    $downloadName = $job['output_name'] ?? basename($relativePath);
+
+    return response()->download($fullPath, $downloadName, [
+        'Content-Type' => 'video/mp4',
+    ]);
+}
+public function downloadAllExports(Request $request)
+{
+    $project = $this->resolveProject($request);
+
+    $timeline = $this->normalizeTimeline($project->timeline_data);
+    $jobs = $timeline['export_jobs'] ?? [];
+
+    Storage::disk('public')->makeDirectory('editorvideoia/zips');
+
+    $zipRelativePath = 'editorvideoia/zips/videos_renderizados_projeto_'.$project->id.'_'.now()->format('Ymd_His').'.zip';
+    $zipFullPath = Storage::disk('public')->path($zipRelativePath);
+
+    $zip = new ZipArchive();
+
+    if ($zip->open($zipFullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        abort(500, 'Nao foi possivel criar o ZIP.');
     }
 
+    $added = 0;
+
+    foreach ($jobs as $index => $job) {
+        if (!is_array($job)) {
+            continue;
+        }
+
+        $relativePath = $job['relative_path'] ?? $job['output_file'] ?? null;
+
+        if (!$relativePath || !Storage::disk('public')->exists($relativePath)) {
+            continue;
+        }
+
+        $fullPath = Storage::disk('public')->path($relativePath);
+        $nameInZip = $job['output_name'] ?? ('video_'.($index + 1).'.mp4');
+
+        $zip->addFile($fullPath, $nameInZip);
+        $added++;
+    }
+
+    $zip->close();
+
+    abort_unless($added > 0, 404, 'Nenhum MP4 renderizado encontrado para ZIP.');
+
+    return response()->download($zipFullPath, basename($zipRelativePath), [
+        'Content-Type' => 'application/zip',
+    ]);
+}
     public function resetExport(): JsonResponse
     {
         $project = $this->resolveProject($request);
