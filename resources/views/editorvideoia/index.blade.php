@@ -6,8 +6,10 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>EditorVideoIA - Fase 6.5 Bloco 1</title>
 <link rel="stylesheet" href="{{ asset('editor-video-fase6/editor-fase6.css') }}">
+<link rel="stylesheet" href="{{ asset('editor-video-fase6/dashboard.css') }}">
 </head>
 <body class="ev-dashboard-mode">
+    @include('editorvideoia.dashboard')
 <header class="ev-topbar">
     <div>
         <strong>EditorVideoIA</strong>
@@ -123,7 +125,16 @@
 
             <div id="batchList" class="ev-batch-list"></div>
         </section>
-        <div class="ev-advanced-toggle-wrap">\n    <button id="btnToggleAdvancedEditor" class="ev-advanced-toggle" type="button">🎬 Abrir editor avançado</button>\n</div>\n<section class="ev-timeline-card ev-editor-collapsed">
+           <div class="ev-advanced-toggle-wrap">
+    <button
+        id="btnToggleAdvancedEditor"
+        class="ev-advanced-toggle"
+        type="button">
+        🎬 Abrir editor avançado
+    </button>
+</div>
+
+<section class="ev-timeline-card ev-editor-collapsed">
             <div class="ev-tools">
                 <button class="tool active" data-tool="select" type="button">Cursor</button>
                 <button class="tool" data-tool="razor" type="button">Razor</button>
@@ -313,6 +324,7 @@ window.EditorVideoIAFase6 = {
 </script>
 
 <script src="{{ asset('editor-video-fase6/editor-fase6.js') }}"></script>
+<script src="{{ asset('editor-video-fase6/dashboard.js') }}"></script>
 </body>
 </html>
 
