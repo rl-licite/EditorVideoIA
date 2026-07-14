@@ -1681,13 +1681,27 @@ const common =
         if (els.batchFailed) els.batchFailed.textContent = failed;
 
         if (els.batchList) {
-            els.batchList.innerHTML = jobs.slice(0, 100).map(job => `
-                <div class="ev-batch-job">
-                    <span>${escapeHtml(job.name || 'Vídeo')}</span>
-                    <span>${escapeHtml(job.status || 'aguardando')} • ${Number(job.progress || 0)}%</span>
-                </div>
-            `).join('');
+            const limit = Math.max(1, Math.min(100, Number(document.getElementById('dashboardLoadLimit')?.value || 100)));
+            els.batchList.innerHTML = jobs.slice(0, limit).map(job => {
+                const mediaUrl = job.stream_url || job.url || '';
+                const status = String(job.status || 'aguardando');
+                const preview = mediaUrl
+                    ? `<video src="${escapeHtml(mediaUrl)}" muted preload="metadata"></video>`
+                    : '<div class="ev-batch-thumb-fallback">🎬</div>';
+                return `
+                    <article class="ev-batch-job status-${escapeHtml(status)}">
+                        <div class="ev-batch-thumb">${preview}</div>
+                        <div class="ev-batch-meta">
+                            <strong title="${escapeHtml(job.name || 'Vídeo')}">${escapeHtml(job.name || 'Vídeo')}</strong>
+                            <small>${escapeHtml(status)} • ${Number(job.progress || 0)}%</small>
+                        </div>
+                    </article>
+                `;
+            }).join('');
         }
+
+        const dashboardCount = document.getElementById('dashboardVideoCount');
+        if (dashboardCount) dashboardCount.textContent = total + ' vídeo(s)';
     },
 
     bind() {
@@ -1696,7 +1710,16 @@ const common =
         els.btnBatchPause?.addEventListener('click', () => this.pause());
         els.btnBatchResume?.addEventListener('click', () => this.resume());
         els.btnBatchCancel?.addEventListener('click', () => this.cancel());
-
+        document.getElementById('btnSidebarProcess')?.addEventListener('click', () => this.start());
+        document.getElementById('dashboardLoadLimit')?.addEventListener('change', () => this.status());
+        document.getElementById('dashboardCardSize')?.addEventListener('change', event => {
+            document.body.classList.remove('size-small', 'size-medium', 'size-large');
+            document.body.classList.add('size-' + event.target.value);
+        });
+        document.getElementById('dashboardColumns')?.addEventListener('change', event => {
+            document.documentElement.style.setProperty('--ev-dashboard-cols', event.target.value);
+        });
+        document.getElementById('btnDashboardPreset')?.addEventListener('click', () => setMsg('Presets carregados para o painel.'));
         this.status();
         setInterval(() => this.status(), 3000);
     }
@@ -1759,3 +1782,83 @@ const common =
 
     EditorEngine.init();
 })();
+
+// layoutRapidoBloco2
+window.addEventListener('DOMContentLoaded', () => {
+    const button = document.getElementById('btnToggleAdvancedEditor');
+    const timeline = document.querySelector('.ev-timeline-card');
+    if (!button || !timeline) return;
+
+    button.addEventListener('click', () => {
+        const collapsed = timeline.classList.toggle('ev-editor-collapsed');
+        button.textContent = collapsed ? '🎬 Abrir editor avançado' : '✕ Fechar editor avançado';
+        if (!collapsed) {
+            window.setTimeout(() => timeline.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+        }
+    });
+});
+// layoutFinalProfissionalBloco4
+window.addEventListener('DOMContentLoaded', () => {
+    document.body.classList.add('ev-final-professional');
+
+    const rename = (selector, text) => {
+        const el = document.querySelector(selector);
+        if (el) el.textContent = text;
+    };
+    rename('#btnBatchCreate', 'Criar fila');
+    rename('#btnBatchStart', '▶ PROCESSAR VÍDEOS');
+    rename('#btnBatchPause', 'Pausar');
+    rename('#btnBatchResume', 'Continuar');
+    rename('#btnBatchCancel', 'Cancelar');
+
+    const columns = document.getElementById('dashboardColumns');
+    if (columns) {
+        const wanted = '7';
+        if (![...columns.options].some(option => option.value === wanted)) {
+            const option = document.createElement('option');
+            option.value = wanted;
+            option.textContent = wanted;
+            columns.appendChild(option);
+        }
+        columns.value = wanted;
+        document.documentElement.style.setProperty('--ev-dashboard-cols', wanted);
+        columns.addEventListener('change', () => {
+            document.documentElement.style.setProperty('--ev-dashboard-cols', columns.value);
+        });
+    }
+
+    const cardSize = document.getElementById('dashboardCardSize');
+    if (cardSize) {
+        cardSize.value = 'small';
+        document.body.classList.remove('size-medium', 'size-large');
+        document.body.classList.add('size-small');
+    }
+
+    const decorateCards = () => {
+        document.querySelectorAll('.ev-batch-job').forEach((card) => {
+            if (card.querySelector('.ev-card-tools')) return;
+            const tools = document.createElement('div');
+            tools.className = 'ev-card-tools';
+            tools.innerHTML = '<button type="button" title="Mover para cima">↑</button><button type="button" title="Mover para baixo">↓</button><button type="button" title="Abrir no editor">✎</button><button type="button" title="Remover da visualização">×</button>';
+            const edit = tools.children[2];
+            edit.addEventListener('click', () => {
+                document.getElementById('btnEditorMode')?.click();
+            });
+            const remove = tools.children[3];
+            remove.addEventListener('click', () => card.style.display = 'none');
+            card.appendChild(tools);
+        });
+    };
+
+    decorateCards();
+    const list = document.getElementById('batchList');
+    if (list) new MutationObserver(decorateCards).observe(list, { childList: true, subtree: true });
+
+    document.querySelectorAll('body *').forEach((element) => {
+        for (const node of element.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE && node.nodeValue?.includes('\\n')) {
+                node.nodeValue = node.nodeValue.replace(/\\n/g, '');
+            }
+        }
+    });
+});

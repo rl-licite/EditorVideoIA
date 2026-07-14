@@ -7,7 +7,7 @@
 <title>EditorVideoIA - Fase 6.5 Bloco 1</title>
 <link rel="stylesheet" href="{{ asset('editor-video-fase6/editor-fase6.css') }}">
 </head>
-<body>
+<body class="ev-dashboard-mode">
 <header class="ev-topbar">
     <div>
         <strong>EditorVideoIA</strong>
@@ -26,9 +26,16 @@
             <h2>Biblioteca</h2>
             <span id="assetCounter">{{ count($assets ?? []) }}</span>
         </div>
-        <p class="ev-muted">Envie uma ou várias mídias e arraste para uma trilha da timeline.</p>
+        <p class="ev-muted">Envie até 100 vídeos, organize a fila e processe tudo automaticamente.</p>
+        <div class="ev-side-steps">
+            <button class="ev-side-step active" type="button">📥 Enviar vídeos</button>
+            <button class="ev-side-step" type="button">🖼 Selecionar template</button>
+            <button class="ev-side-step" type="button">🎵 Importar músicas</button>
+            <button class="ev-side-step" type="button">🔑 Configurar API</button>
+        </div>
         <input id="mediaInput" type="file" accept="video/*,image/*,audio/*" multiple>
-        <button id="btnUpload" class="ev-primary" type="button">Enviar mídia</button>
+        <button id="btnUpload" class="ev-primary ev-upload-main" type="button">📥 ENVIAR VÍDEOS</button>
+        <button id="btnSidebarProcess" class="ev-process-main" type="button">▶ PROCESSAR VÍDEOS</button>
         <div id="uploadStatus" class="ev-status small">Pronto para importar.</div>
         <input id="assetSearch" type="search" placeholder="Pesquisar mídia...">
         <select id="assetFilter">
@@ -65,6 +72,13 @@
 
     <section class="ev-workspace">
         <div class="ev-message" id="systemMessage">Fase 6.5 Bloco 1 ativo: timeline, upload múltiplo, preview, play/pause e salvamento estabilizados.</div>
+        <section class="ev-dashboard-toolbar">
+            <div><strong>Painel de vídeos</strong><span id="dashboardVideoCount">0 vídeo(s)</span></div>
+            <label>Carregar <input id="dashboardLoadLimit" type="number" min="1" max="100" value="100"></label>
+            <label>Tamanho <select id="dashboardCardSize"><option value="small">Pequeno</option><option value="medium" selected>Médio</option><option value="large">Grande</option></select></label>
+            <label>Colunas <select id="dashboardColumns"><option>3</option><option>4</option><option selected>5</option><option>6</option></select></label>
+            <button id="btnDashboardPreset" type="button">⟳ Carregar presets</button>
+        </section>
         <section class="ev-preview-card">
             <div class="ev-preview-head">
                 <div>
@@ -84,12 +98,12 @@
         <section class="ev-batch-card">
             <div class="ev-batch-head">
                 <div>
-                    <strong>Processamento em lote</strong>
+                    <strong>Processamento em lote profissional</strong>
                     <span id="batchSummary">0 vídeos na fila</span>
                 </div>
                 <div class="ev-batch-actions">
                     <button id="btnBatchCreate" type="button">Criar fila</button>
-                    <button id="btnBatchStart" type="button">Iniciar</button>
+                    <button id="btnBatchStart" class="ev-start-main" type="button">▶ PROCESSAR VÍDEOS</button>
                     <button id="btnBatchPause" type="button">Pausar</button>
                     <button id="btnBatchResume" type="button">Continuar</button>
                     <button id="btnBatchCancel" class="danger" type="button">Cancelar</button>
@@ -109,7 +123,7 @@
 
             <div id="batchList" class="ev-batch-list"></div>
         </section>
-        <section class="ev-timeline-card">
+        <div class="ev-advanced-toggle-wrap">\n    <button id="btnToggleAdvancedEditor" class="ev-advanced-toggle" type="button">🎬 Abrir editor avançado</button>\n</div>\n<section class="ev-timeline-card ev-editor-collapsed">
             <div class="ev-tools">
                 <button class="tool active" data-tool="select" type="button">Cursor</button>
                 <button class="tool" data-tool="razor" type="button">Razor</button>
